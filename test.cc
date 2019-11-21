@@ -1,1 +1,10 @@
-using namespace std;
+#include <ncurses.h>
+
+
+
+
+int main() {
+
+    return 1;
+
+}
