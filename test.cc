@@ -4,7 +4,8 @@
 
 
 int main() {
+    initscr();
 
-    return 1;
+    endwin();
 
 }
