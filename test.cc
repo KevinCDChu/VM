@@ -24,6 +24,8 @@ int main() {
         cur_line += c;
         }
     }
+    lines.push_back(cur_line);
+    std::cout << lines[0];
 
     
     int w;
@@ -43,18 +45,14 @@ int main() {
         ch = getch();
         if(ch == 'w') {
             scrl(-1);
-            offset -= 1;
-            if(offset < 0) {
-                offset = 0;
-            }
+            if(offset > 0) offset -= 1;
         }
 
         if(ch == 's') {
             scrl(1);
-            //if(offset > lines.size() - w) {
-              //  offset = lines.size() - w;
-            //}
-            offset += 1;
+            if(offset + w < lines.size() - 1) {
+                offset += 1;
+            }
         }
         if(ch == 'h') x -= 1;
         if(ch == 'k') y -= 1;
@@ -64,6 +62,8 @@ int main() {
         if(y < 1) y = 0;
         wmove(stdscr, y, x);
         // printw(str.c_str());
+        getmaxyx(stdscr, w, h);
+        w -= 2;
         refresh();
         for(int i = 0; i <= w; ++i) {
         printw(lines[i + offset].c_str());
@@ -75,6 +75,3 @@ int main() {
     }
 	endwin();
     }
-
-}
-
