@@ -1,6 +1,8 @@
 #include <ncurses.h>
 #include <iostream>
 #include <fstream>
+#include <vector>
+#include <string>
 
 int main() {
     size_t x = 0;
@@ -12,18 +14,48 @@ int main() {
     std::ifstream f{"test.cc"};
     f >> std::noskipws;
     char c;
-    std::string str;
+    std::vector<std::string> lines;
+    std::string cur_line;
     while(f >> c) {
-        str += c;
+        if(c == '\n') {
+            lines.push_back(cur_line);
+            cur_line = "";
+        } else {
+        cur_line += c;
+        }
     }
-	printw(str.c_str());
+
+    
+    int w;
+    int h;
+    getmaxyx(stdscr, w, h);
+    w -= 2;
+    for(int i = 0; i <= w; ++i) {
+        printw(lines[i].c_str());
+        std::string new_line = "\n";
+        printw(new_line.c_str());
+    }
+    int offset = 0;
     wmove(stdscr, y, x);
 	refresh();
     int ch = getch();
     while(ch != 'p') {
         ch = getch();
-        if(ch == 'w') scrl(-1);
-        if(ch == 's') scrl(1);
+        if(ch == 'w') {
+            scrl(-1);
+            offset -= 1;
+            if(offset < 0) {
+                offset = 0;
+            }
+        }
+
+        if(ch == 's') {
+            scrl(1);
+            //if(offset > lines.size() - w) {
+              //  offset = lines.size() - w;
+            //}
+            offset += 1;
+        }
         if(ch == 'h') x -= 1;
         if(ch == 'k') y -= 1;
         if(ch == 'j') y += 1;
@@ -32,6 +64,13 @@ int main() {
         if(y < 1) y = 0;
         wmove(stdscr, y, x);
         // printw(str.c_str());
+        refresh();
+        for(int i = 0; i <= w; ++i) {
+        printw(lines[i + offset].c_str());
+        std::string new_line = "\n";
+        printw(new_line.c_str());
+    }
+        //getmaxyx(stdscr, w, h);
         refresh();
     }
 	endwin();
