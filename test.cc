@@ -26,40 +26,33 @@ class Window : public View {
     int cursor_x = 0;
     int cursor_y = 0;
 
-    void updateOffset(int ch) {
-        if(ch == 'w') {
-            if(cursor_y > 0) scrl(-1);
-            if(offset > 0) offset -= 1;
-        }
-        if(ch == 's') {
-            scrl(1);
-            if(offset + height < lines.size() - 1) offset += 1;
-        }
-    }
-
     void updateView(int ch) override {
-        if(ch == 'h') {
+        if(ch == 'h') { // Move cursor left
             if(cursor_x > 0) {
-                int line_size = lines[cursor_y + offset].size();
-                cursor_x = std::min(cursor_x - 1, line_size);
+                cursor_x = std::min(cursor_x - 1, static_cast<int>(lines[cursor_y + offset].size())); // Take min as we might still be greater from previous line
             }
         }
-        if(ch == 'l') {
-            if(cursor_x < lines[cursor_y + offset].size() - 1) ++cursor_x;
+        if(ch == 'l') { // Move cursor right
+            if(cursor_x < static_cast<int>(lines[cursor_y + offset].size()) - 1) ++cursor_x;
         }
         if(ch == 'j') {
-            if(cursor_y > 0 && cursor_y <= 5) {
-                scrl(-1);
-                if(offset > 0) offset -= 1;
+            if(cursor_y > 0 && cursor_y <= 5) { 
+                if(offset > 0) {
+                    offset -= 1;
+                    scrl(-1);
+
+                }
+                if(offset == 0) --cursor_y;
             }
-            else --cursor_y;
+            else cursor_y = std::max(cursor_y - 1, 0);
         }
         if(ch == 'k') {
             if(height - cursor_y <= 5) {
                 scrl(1);
-                if(offset + height < lines.size() - 1) offset += 1;
+                if(offset + height < static_cast<int>(lines.size()) - 1) offset += 1;
+                if(offset + height == static_cast<int>(lines.size()) - 1) cursor_y = std::min(cursor_y + 1, height);
             }
-            else ++cursor_y;
+            else cursor_y = std::min(cursor_y + 1, height);
         }
     }
     void displayView() override {
@@ -69,8 +62,7 @@ class Window : public View {
             std::string new_line = "\n";
             printw(new_line.c_str());
         }
-        int line_length = lines[cursor_y + offset].size();
-        move(cursor_y, std::min(cursor_x, line_length));
+        move(cursor_y, std::min(cursor_x, static_cast<int>(lines[cursor_y + offset].size()))); // take min as we might have overshoot from previous line
         refresh();
     }
 
