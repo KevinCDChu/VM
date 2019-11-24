@@ -3,13 +3,14 @@
 #include <fstream>
 #include <vector>
 #include <string>
+#include <algorithm>
 
 
 
 
 class View {
 
-    virtual void updateView() = 0;
+    virtual void updateView(int ch) = 0;
     virtual void displayView() = 0;
 
 };
@@ -22,29 +23,54 @@ class Window : public View {
     int offset;
     int width;
     int height;
-    int cursor_x;
-    int cursor_y;
+    int cursor_x = 0;
+    int cursor_y = 0;
 
     void updateOffset(int ch) {
         if(ch == 'w') {
-            scrl(-1);
+            if(cursor_y > 0) scrl(-1);
             if(offset > 0) offset -= 1;
         }
         if(ch == 's') {
             scrl(1);
-            if(offset + height < lines.size() - 1) {
-                offset += 1;
-            }
+            if(offset + height < lines.size() - 1) offset += 1;
         }
     }
 
-    void updateView() override {}
+    void updateView(int ch) override {
+        if(ch == 'h') {
+            if(cursor_x > 0) {
+                int line_size = lines[cursor_y + offset].size();
+                cursor_x = std::min(cursor_x - 1, line_size);
+            }
+        }
+        if(ch == 'l') {
+            if(cursor_x < lines[cursor_y + offset].size() - 1) ++cursor_x;
+        }
+        if(ch == 'j') {
+            if(cursor_y > 0 && cursor_y <= 5) {
+                scrl(-1);
+                if(offset > 0) offset -= 1;
+            }
+            else --cursor_y;
+        }
+        if(ch == 'k') {
+            if(height - cursor_y <= 5) {
+                scrl(1);
+                if(offset + height < lines.size() - 1) offset += 1;
+            }
+            else ++cursor_y;
+        }
+    }
     void displayView() override {
+        move(0, 0);
         for(int i = 0; i <= height; ++i) {
             printw(lines[i + offset].c_str());
             std::string new_line = "\n";
             printw(new_line.c_str());
         }
+        int line_length = lines[cursor_y + offset].size();
+        move(cursor_y, std::min(cursor_x, line_length));
         refresh();
     }
 
@@ -87,8 +113,8 @@ int main() {
         getmaxyx(stdscr, h, w);
         h -= 2;
         window.height = h;
-        window.updateOffset(ch);
+        window.updateView(ch);
         window.displayView();
     }
-	endwin();
-    }
+    endwin();
+}
