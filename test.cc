@@ -7,6 +7,12 @@
 
 
 
+void printw(std::string str) {
+    printw(str.c_str());
+}
+
+
+
 
 class View {
 
@@ -35,37 +41,42 @@ class Window : public View {
         if(ch == 'l') { // Move cursor right
             if(cursor_x < static_cast<int>(lines[cursor_y + offset].size()) - 1) ++cursor_x;
         }
-        if(ch == 'j') {
+        if(ch == 'k') { // move cursor up
             if(cursor_y > 0 && cursor_y <= 5) { 
                 if(offset > 0) {
                     offset -= 1;
                     scrl(-1);
-
                 }
                 if(offset == 0) --cursor_y;
             }
             else cursor_y = std::max(cursor_y - 1, 0);
         }
-        if(ch == 'k') {
+        if(ch == 'j') { // move cursor down
             if(height - cursor_y <= 5) {
                 scrl(1);
                 if(offset + height < static_cast<int>(lines.size()) - 1) offset += 1;
                 if(offset + height == static_cast<int>(lines.size()) - 1) cursor_y = std::min(cursor_y + 1, height);
             }
-            else cursor_y = std::min(cursor_y + 1, height);
+            else cursor_y = std::min(std::min(cursor_y + 1, height), static_cast<int>(lines.size()) - 1 - offset);
         }
     }
+
     void displayView() override {
         move(0, 0);
         for(int i = 0; i <= height; ++i) {
-            printw(lines[i + offset].c_str());
-            std::string new_line = "\n";
-            printw(new_line.c_str());
+            if(i + offset < static_cast<int>(lines.size())) printw(lines[i + offset].c_str());
+            else {
+                init_pair(1, COLOR_BLUE, COLOR_BLACK);
+                attron(COLOR_PAIR(1));
+                printw("~");
+            }
+            printw("\n");
         }
+        attroff(COLOR_PAIR(1));
+
         move(cursor_y, std::min(cursor_x, static_cast<int>(lines[cursor_y + offset].size()))); // take min as we might have overshoot from previous line
         refresh();
     }
-
 };
 
 
@@ -73,10 +84,11 @@ class Window : public View {
 
 int main() {
     initscr();
+    start_color();
     scrollok(stdscr, true);
     cbreak();
     noecho();
-    std::ifstream f{"test.cc"};
+    std::ifstream f{"test.txt"};
     f >> std::noskipws;
     char c;
     std::vector<std::string> lines;
