@@ -132,9 +132,16 @@ class Logic : public Model {
             ++cursor_y;
             clear();
         } else { 
-            if(lines[cur_line].size() == 0) lines[cur_line] = std::to_string(ch);
-            else lines[cur_line] = lines[cur_line].substr(0,cursor_x) + static_cast<char>(ch) + lines[cur_line].substr(cursor_x, static_cast<int>(lines[cur_line].size()) - cursor_x);
-            ++cursor_x;
+            if(lines[cur_line].size() == 0) {
+                std::string new_line = "";
+                new_line += ch;
+                new_line += " ";
+                lines[cur_line] = new_line;
+                cursor_x = 1;
+            } else {
+                lines[cur_line] = lines[cur_line].substr(0,cursor_x) + static_cast<char>(ch) + lines[cur_line].substr(cursor_x, static_cast<int>(lines[cur_line].size()) - cursor_x);
+                ++cursor_x;
+            }
         }
     }
 
