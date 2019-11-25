@@ -1,7 +1,7 @@
 #ifndef MODEL_H
 #define MODEL_H
-#include "view.h"
-#include "controller.h"
+#include "../view/view.h"
+#include "../controller/controller.h"
 #include <string>
 #include <vector>
 

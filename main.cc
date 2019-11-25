@@ -4,9 +4,8 @@
 #include <vector>
 #include <string>
 #include <algorithm>
-#include "view.h"
 #include "utils.h"
-#include "model.h"
+#include "model/model.h"
 
 
 int main(int argc, char * argv[]) {
