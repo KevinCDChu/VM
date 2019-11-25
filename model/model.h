@@ -27,6 +27,7 @@ class Logic : public Model {
     int offset = 0;
     int cursor_x = 0;
     int cursor_y = 0;
+    std::pair<int, int> prevloc;
 
     void addView(View *v) override {
         views.push_back(v);
@@ -133,9 +134,11 @@ class Logic : public Model {
     void addBotCharacter(int ch) {
         if (ch == 127) {
             cmdstr = cmdstr.substr(0, cmdstr.size() - 1);
+            --cursor_x;
         }
         else {
             cmdstr += static_cast<char>(ch);
+            ++cursor_x;
         }
     }
 
@@ -153,7 +156,7 @@ class Logic : public Model {
             insert_mode = false; // escape key
             cmdstr = "";
             botinsert_mode = false;
-            cursor_x = std::min(cursor_x, static_cast<int>(lines[cursor_y + offset].size()) - 1);
+            cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size()) - 1, 0));
             clearbottom(views[0]->getHeight());
         }
         else if(insert_mode) {
@@ -172,10 +175,14 @@ class Logic : public Model {
                     complete = true;
                     cmdstr = "";
                 }
+                cursor_y = prevloc.second;
+                cursor_x = prevloc.first;
             } else if(cmdstr.size() == 1 && ch == 127) { // backspace out of command
                 cmdstr = "";
                 botinsert_mode = false;
                 clearbottom(views[0]->getHeight());
+                cursor_y = prevloc.second;
+                cursor_x = prevloc.first;
             } else {
                 addBotCharacter(ch);
             }
@@ -186,6 +193,10 @@ class Logic : public Model {
         }
         else if(ch == ':') {
             cmdstr = ":";
+            prevloc.first = cursor_x;
+            prevloc.second = cursor_y;
+            cursor_y = views[0]->getHeight() + 1;
+            cursor_x = 1;
             botinsert_mode = true;
         }
         else if(ch == 'h') cursor_left();
