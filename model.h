@@ -70,7 +70,23 @@ class Logic : public Model {
 
     void addCharacter(int ch) {
         int cur_line = cursor_y + offset;
-        if(ch == 127) { // Backspace key
+        if((cursor_x == static_cast<int>(lines[cur_line].size())) && !lines[cur_line].empty()) { // insert mode at end of string
+            if(ch == 127) { // delete last element
+                lines[cur_line]  = lines[cur_line].substr(0, cursor_x - 1);
+                --cursor_x;
+                clearline();
+            } else if(ch == 10) {
+                lines.insert(lines.begin() + cur_line + 1, "");
+                cursor_x = 0;
+                if(cursor_y == views[0]->getHeight()) ++offset;
+                else ++cursor_y;
+                clear();
+            } else { // just insert character
+                lines[cur_line] += ch;
+                ++cursor_x;
+            }
+        }
+        else if(ch == 127) { // Backspace key
             if(cursor_x == 0) {
                 if(cur_line) { 
                     cursor_x = static_cast<int>(lines[cur_line - 1].size());
@@ -131,7 +147,7 @@ class Logic : public Model {
             clearbottom(views[0]->getHeight());
         }
         else if(insert_mode) {
-            cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size() - 1), 0)); // Fix cursor_x constant
+            cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size()), 0)); // Fix cursor_x constant
             addCharacter(ch);
         }
         else if(botinsert_mode) {

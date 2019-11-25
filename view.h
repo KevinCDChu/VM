@@ -46,7 +46,8 @@ class Window : public View {
             printw("\n");
         }
         attroff(COLOR_PAIR(1));
-        move(cursor_y, std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size() - 1), 0))); // take min as we might have overshoot from previous line
+        if(cmdstr != "-- INSERT --") move(cursor_y, std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size() - 1), 0))); // take min as we might have overshoot from previous line
+        else move(cursor_y, std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size()), 0))); // Allowed to be at end of line if insert mode
         refresh();
     }
 };
