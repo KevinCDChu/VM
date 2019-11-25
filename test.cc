@@ -11,7 +11,10 @@ void printw(std::string str) {
     printw(str.c_str());
 }
 
-
+void clearbottom(int height) {
+    move(height + 1, 0);
+    clrtoeol();
+}
 
 
 class View {
@@ -79,7 +82,7 @@ class Bar : public View {
     }
 
     void displayView(std::vector<std::string> &lines, const int &cursor_y, const int &cursor_x, const int &offset, const std::string &cmdstr) override {
-        clear();
+        clearbottom(height);
         move(height + 1, 0);
         printw(cmdstr);
 
@@ -217,7 +220,7 @@ class Logic : public Model {
             insert_mode = false; // escape key
             cmdstr = "";
             botinsert_mode = false;
-            clear();
+            clearbottom(views[0]->getHeight());
         }
         else if(insert_mode) {
             cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size() - 1), 0));
