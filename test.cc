@@ -15,66 +15,44 @@ void printw(std::string str) {
 
 
 class View {
+  public:
 
-    virtual void updateView(int ch) = 0;
-    virtual void displayView() = 0;
+    virtual int getHeight() = 0;
+    virtual void updateView() = 0;
+    virtual void displayView(std::vector<std::string> &lines, const int &cursor_y, const int &cursor_x, const int &offset) = 0;
+
+
 
 };
 
 
 class Window : public View {
     public:
-
-    std::vector<std::string> lines;
-    int offset;
-    int width;
+    
     int height;
-    int cursor_x = 0;
-    int cursor_y = 0;
 
-    void updateView(int ch) override {
-        if(ch == 'h') { // Move cursor left
-            if(cursor_x > 0) {
-                cursor_x = std::min(cursor_x - 1, static_cast<int>(lines[cursor_y + offset].size())); // Take min as we might still be greater from previous line
-            }
-        }
-        if(ch == 'l') { // Move cursor right
-            if(cursor_x < static_cast<int>(lines[cursor_y + offset].size()) - 1) ++cursor_x;
-        }
-        if(ch == 'k') { // move cursor up
-            if(cursor_y > 0 && cursor_y <= 5) { 
-                if(offset > 0) {
-                    offset -= 1;
-                    scrl(-1);
-                }
-                if(offset == 0) --cursor_y;
-            }
-            else cursor_y = std::max(cursor_y - 1, 0);
-        }
-        if(ch == 'j') { // move cursor down
-            if(height - cursor_y <= 5) {
-                scrl(1);
-                if(offset + height < static_cast<int>(lines.size()) - 1) offset += 1;
-                if(offset + height == static_cast<int>(lines.size()) - 1) cursor_y = std::min(cursor_y + 1, height);
-            }
-            else cursor_y = std::min(std::min(cursor_y + 1, height), static_cast<int>(lines.size()) - 1 - offset);
-        }
+    Window() { updateView(); }
+
+    int getHeight() { return height; }
+
+    void updateView() override {
+        int width;
+        getmaxyx(stdscr, height, width);
+        height -= 2;
     }
 
-    void displayView() override {
+    void displayView(std::vector<std::string> &lines, const int &cursor_y,const  int &cursor_x, const int &offset) override {
         move(0, 0);
         for(int i = 0; i <= height; ++i) {
-            if(i + offset < static_cast<int>(lines.size())) printw(lines[i + offset].c_str());
+            if(i + offset < static_cast<int>(lines.size())) printw(lines[i + offset]); // print out line
             else {
-                init_pair(1, COLOR_BLUE, COLOR_BLACK);
                 attron(COLOR_PAIR(1));
                 printw("~");
             }
             printw("\n");
         }
         attroff(COLOR_PAIR(1));
-
-        move(cursor_y, std::min(cursor_x, static_cast<int>(lines[cursor_y + offset].size()))); // take min as we might have overshoot from previous line
+        move(cursor_y, std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size() - 1), 0))); // take min as we might have overshoot from previous line
         refresh();
     }
 };
@@ -82,9 +60,115 @@ class Window : public View {
 
 
 
+class Model {
+  public:
+    std::vector<View*> views;
+    //Controller cntrl;
+    //virtual void addView(View *v) = 0;
+    //virtual void addController(Controller);
+    virtual void updateViews() = 0;
+    virtual void displayViews() = 0;
+};
+
+
+class Logic : public Model {
+    public:
+    bool insert_mode = false; // True if insert mode, false if command mode
+    std::vector<std::string> lines;
+    int offset = 0;
+    int cursor_x = 0;
+    int cursor_y = 0;
+
+    void cursor_up() { // move cursor up
+    if(cursor_y > 0 && cursor_y <= 5) { 
+            if(offset > 0) {
+                offset -= 1;
+                scrl(-1);
+            }
+        if(offset == 0) --cursor_y;
+        } else cursor_y = std::max(cursor_y - 1, 0);
+    }
+
+    void cursor_down() { // move cursor down
+            if(views[0]->getHeight() - cursor_y <= 5) {
+                scrl(1);
+                if(offset + views[0]->getHeight() < static_cast<int>(lines.size()) - 1) offset += 1;
+                if(offset + views[0]->getHeight() == static_cast<int>(lines.size()) - 1) cursor_y = std::min(cursor_y + 1, views[0]->getHeight());
+            }
+            else cursor_y = std::min(std::min(cursor_y + 1, views[0]->getHeight()), static_cast<int>(lines.size()) - 1 - offset);
+        }
+
+    void cursor_left() { // move cursor left
+        if(cursor_x > 0) {
+            cursor_x = std::min(cursor_x - 1, std::max(static_cast<int>(lines[cursor_y + offset].size() - 2), 0)); // Take min as we might still be greater from previous line
+        }
+    }
+
+    void cursor_right()  { // move cursor right
+        if(cursor_x < static_cast<int>(lines[cursor_y + offset].size()) - 1) ++cursor_x;
+    }
+
+
+    void addCharacter(int ch) {
+        int cur_line = cursor_y + offset;
+        if(ch == 127) {
+            if(cursor_x == 0) {
+                if(cur_line) { 
+                    cursor_x = static_cast<int>(lines[cur_line - 1].size());
+                    lines[cur_line - 1] = lines[cur_line - 1].append(lines[cur_line]);
+                    lines.erase(lines.begin() + cur_line);
+                    if(cursor_y > 0) --cursor_y;
+                    else --offset;
+                }
+            } else {
+                lines[cur_line]  = lines[cur_line].substr(0, cursor_x - 1) + lines[cur_line].substr(cursor_x, static_cast<int>(lines[cur_line].size() - cursor_x));
+                --cursor_x;
+            }
+        clear();
+        } else if(ch == 10) {
+            lines.insert(lines.begin() + cur_line + 1, lines[cur_line].substr(cursor_x, lines[cur_line].size() - cursor_x));
+            lines[cur_line] = lines[cur_line].substr(0, cursor_x);
+            cursor_x = 0;
+            ++cursor_y;
+            clear();
+        } else { 
+            if(lines[cur_line].size() == 0) lines[cur_line] = ch;
+            else lines[cur_line] = lines[cur_line].substr(0,cursor_x) + static_cast<char>(ch) + lines[cur_line].substr(cursor_x, static_cast<int>(lines[cur_line].size()) - cursor_x);
+            ++cursor_x;
+        }
+    }
+
+    void addView(View *v) { views.push_back(v); }
+    void updateViews() {
+        for(auto &i : views) i->updateView();
+    }
+    void displayViews() {
+        updateViews();
+        for(auto &i : views) i->displayView(lines, cursor_y, cursor_x, offset);
+    }
+    void interpret_input(int ch) {
+        if(ch == 27) insert_mode = false; // escape key
+        else if(insert_mode) {
+            cursor_x = std::min(cursor_x, static_cast<int>(lines[cursor_y + offset].size() - 1));
+            addCharacter(ch);
+        }
+        else if(ch == 'i') insert_mode = true;
+        else if(ch == 'h') cursor_left();
+        else if(ch == 'j') cursor_down();
+        else if(ch == 'k') cursor_up();
+        else if(ch == 'l') cursor_right();
+    }
+};
+
+
+
+
+
+
 int main() {
     initscr();
     start_color();
+    init_pair(1, COLOR_BLUE, COLOR_BLACK);
     scrollok(stdscr, true);
     cbreak();
     noecho();
@@ -101,24 +185,26 @@ int main() {
         cur_line += c;
         }
     }
-    lines.push_back(cur_line);  
-    Window window;
-    window.lines = lines;  
-    int w;
-    int h;
-    getmaxyx(stdscr, h, w);
-    h -= 2;
-    window.height = h;
-    window.offset = 0;
-    window.displayView();
+    if(cur_line != "") lines.push_back(cur_line);  
+    Logic logic;
+    logic.lines = lines;
+    Window *window = new Window;
+    logic.views.push_back(window);
+    logic.updateViews();
+    logic.displayViews();
     int ch = getch();
     while(ch != 'p') {
         ch = getch();
-        getmaxyx(stdscr, h, w);
-        h -= 2;
-        window.height = h;
-        window.updateView(ch);
-        window.displayView();
+        logic.updateViews();
+        logic.interpret_input(ch);
+        logic.displayViews();
     }
+    std::ofstream myfile;
+    myfile.open ("test.txt");
+    for(size_t i = 0; i < logic.lines.size(); ++i) {
+        myfile << logic.lines[i];
+        if(i != lines.size() - 1) myfile << "\n";
+    }
+    myfile.close();
     endwin();
 }
