@@ -8,14 +8,35 @@
 #include "utils.h"
 #include "model.h"
 
-int main() {
+
+
+int main(int argc, char * argv[]) {
+    if(argc != 2) {
+        std::cerr << "No file specified" << std::endl;
+        return 1;
+    }
     initscr();
     start_color();
     init_pair(1, COLOR_BLUE, COLOR_BLACK);
     scrollok(stdscr, true);
     cbreak();
     noecho();
-    std::ifstream f{"test.txt"};
+    std::ifstream f{argv[1]};
+    f >> std::noskipws;
+    char c;
+    std::vector<st
+int main(int argc, char * argv[]) {
+    if(argc != 2) {
+        std::cerr << "No file specified" << std::endl;
+        return 1;
+    }
+    initscr();
+    start_color();
+    init_pair(1, COLOR_BLUE, COLOR_BLACK);
+    scrollok(stdscr, true);
+    cbreak();
+    noecho();
+    std::ifstream f{argv[1]};
     f >> std::noskipws;
     char c;
     std::vector<std::string> lines;
@@ -35,21 +56,15 @@ int main() {
     Bar *bar = new Bar;
     logic.views.push_back(bar);
     logic.views.push_back(window);
+    logic.filename = argv[1];
     logic.updateViews();
     logic.displayViews();
-    int ch = 'a';
-    while(ch != 'p') {
+    int ch;
+    while(!logic.complete) {
         ch = getch();
         logic.updateViews();
         logic.interpret_input(ch);
         logic.displayViews();
     }
-    std::ofstream myfile;
-    myfile.open ("test.txt");
-    for(size_t i = 0; i < logic.lines.size(); ++i) {
-        myfile << logic.lines[i];
-        if(i != lines.size() - 1) myfile << "\n";
-    }
-    myfile.close();
     endwin();
 }

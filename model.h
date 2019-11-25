@@ -17,13 +17,26 @@ class Model {
 
 class Logic : public Model {
     public:
+    bool complete = false;
     bool insert_mode = false; // True if insert mode, false if command mode
     bool botinsert_mode = false;
+    std::string filename;
     std::vector<std::string> lines;
     std::string cmdstr = "";
     int offset = 0;
     int cursor_x = 0;
     int cursor_y = 0;
+
+
+    void save_file() {
+        std::ofstream myfile;
+        myfile.open(filename);
+        for(size_t i = 0; i < lines.size(); ++i) {
+            myfile << lines[i];
+            if(i != lines.size() - 1) myfile << "\n";
+        }
+        myfile.close();
+    }
 
     void cursor_up() { // move cursor up
     if(cursor_y > 0 && cursor_y <= 5) { 
@@ -37,7 +50,7 @@ class Logic : public Model {
 
     void cursor_down() { // move cursor down
             if(views[0]->getHeight() - cursor_y <= 5) {
-                scrl(1);
+                if(cursor_y != views[0]->getHeight() + offset) scrl(1);
                 if(offset + views[0]->getHeight() < static_cast<int>(lines.size()) - 1) offset += 1;
                 if(offset + views[0]->getHeight() == static_cast<int>(lines.size()) - 1) cursor_y = std::min(cursor_y + 1, views[0]->getHeight());
             }
@@ -117,16 +130,26 @@ class Logic : public Model {
             clearbottom(views[0]->getHeight());
         }
         else if(insert_mode) {
-            cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size() - 1), 0)); // Fix cursor-x
+            cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size() - 1), 0)); // Fix cursor_x constant
             addCharacter(ch);
         }
         else if(botinsert_mode) {
-            if(ch == '\n' || (cmdstr.size() == 1 && ch == 127)) {
+            if(ch == 10) { // Pressed enter, do command
+                if(cmdstr == ":wq") {
+                    botinsert_mode = false;
+                    complete = true;
+                    cmdstr = "";
+                    save_file();                    
+                } else if(cmdstr == ":q!") {
+                    botinsert_mode = false;
+                    complete = true;
+                    cmdstr = "";
+                }
+            } else if(cmdstr.size() == 1 && ch == 127) { // backspace out of command
                 cmdstr = "";
                 botinsert_mode = false;
                 clear();
-            }
-            else {
+            } else {
                 addBotCharacter(ch);
             }
         }
