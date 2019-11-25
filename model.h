@@ -1,15 +1,16 @@
 #ifndef MODEL_H
 #define MODEL_H
 #include "view.h"
+#include "controller.h"
 #include <string>
 #include <vector>
 
 class Model {
   public:
     std::vector<View*> views;
-    //Controller cntrl;
-    //virtual void addView(View *v) = 0;
-    //virtual void addController(Controller);
+    Controller *cntrl;
+    virtual void addView(View *v) = 0;
+    virtual void addController(Controller *c) = 0;
     virtual void updateViews() = 0;
     virtual void displayViews() = 0;
 };
@@ -27,6 +28,13 @@ class Logic : public Model {
     int cursor_x = 0;
     int cursor_y = 0;
 
+    void addView(View *v) override {
+        views.push_back(v);
+    }
+
+    void addController(Controller *c) override {
+        cntrl = c;
+    }
 
     void save_file() {
         std::ofstream myfile;
@@ -131,7 +139,6 @@ class Logic : public Model {
         }
     }
 
-    void addView(View *v) { views.push_back(v); }
     void updateViews() {
         for(auto &i : views) i->updateView();
     }
@@ -139,7 +146,9 @@ class Logic : public Model {
         updateViews();
         for(auto &i : views) i->displayView(lines, cursor_y, cursor_x, offset, cmdstr);
     }
-    void interpret_input(int ch) {
+    void interpret_input() {
+        cntrl->genAction();
+        int ch = cntrl->getAction()->getchar();
         if(ch == 27) {
             insert_mode = false; // escape key
             cmdstr = "";
