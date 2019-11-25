@@ -153,6 +153,7 @@ class Logic : public Model {
             insert_mode = false; // escape key
             cmdstr = "";
             botinsert_mode = false;
+            cursor_x = std::min(cursor_x, static_cast<int>(lines[cursor_y + offset].size()) - 1);
             clearbottom(views[0]->getHeight());
         }
         else if(insert_mode) {
