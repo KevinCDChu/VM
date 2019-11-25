@@ -21,12 +21,14 @@ class Logic : public Model {
     bool complete = false;
     bool insert_mode = false; // True if insert mode, false if command mode
     bool botinsert_mode = false;
+    bool filechange = false;
     std::string filename;
     std::vector<std::string> lines;
     std::string cmdstr = "";
     int offset = 0;
     int cursor_x = 0;
     int cursor_y = 0;
+    std::pair<int, int> prevloc;
 
     void addView(View *v) override {
         views.push_back(v);
@@ -128,14 +130,45 @@ class Logic : public Model {
                 ++cursor_x;
             }
         }
+        if(cur_line || cursor_x || ch != 127) filechange = true;
     }
 
     void addBotCharacter(int ch) {
         if (ch == 127) {
             cmdstr = cmdstr.substr(0, cmdstr.size() - 1);
+            --cursor_x;
         }
         else {
             cmdstr += static_cast<char>(ch);
+            ++cursor_x;
+        }
+    }
+
+    void botCommand(std::string cmd) {
+        if(cmd == ":wq") {
+            botinsert_mode = false;
+            complete = true;
+            cmdstr = "";
+            save_file();                    
+        } else if(cmd == ":q!") {
+            botinsert_mode = false;
+            complete = true;
+            cmdstr = "";
+        }
+        else if(cmd == ":w") {
+            botinsert_mode = false;
+            cmdstr = "";
+            save_file();
+        }
+        else if(cmd == ":q") {
+            botinsert_mode = false;
+            if (filechange == true) {
+                cmdstr = "E37: No write since last change (add ! to override)";
+            }
+            else {
+                complete = true;
+                cmdstr = "";
+            }
         }
     }
 
@@ -154,7 +187,7 @@ class Logic : public Model {
             insert_mode = false; // escape key
             cmdstr = "";
             botinsert_mode = false;
-            cursor_x = std::min(cursor_x, static_cast<int>(lines[cursor_y + offset].size()) - 1);
+            cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size()) - 1, 0));
             clearbottom(views[0]->getHeight());
         }
         else if(insert_mode) {
@@ -174,20 +207,15 @@ class Logic : public Model {
         }
         else if(botinsert_mode) {
             if(ch == 10) { // Pressed enter, do command
-                if(cmdstr == ":wq") {
-                    botinsert_mode = false;
-                    complete = true;
-                    cmdstr = "";
-                    save_file();                    
-                } else if(cmdstr == ":q!") {
-                    botinsert_mode = false;
-                    complete = true;
-                    cmdstr = "";
-                }
+                botCommand(cmdstr);
+                cursor_y = prevloc.second;
+                cursor_x = prevloc.first;
             } else if(cmdstr.size() == 1 && ch == 127) { // backspace out of command
                 cmdstr = "";
                 botinsert_mode = false;
                 clearbottom(views[0]->getHeight());
+                cursor_y = prevloc.second;
+                cursor_x = prevloc.first;
             } else {
                 addBotCharacter(ch);
             }
@@ -199,6 +227,10 @@ class Logic : public Model {
         }
         else if(ch == ':') {
             cmdstr = ":";
+            prevloc.first = cursor_x;
+            prevloc.second = cursor_y;
+            cursor_y = views[0]->getHeight() + 1;
+            cursor_x = 1;
             botinsert_mode = true;
         }
         else if(ch == 'h') cursor_left();
