@@ -1,7 +1,7 @@
 CXX = g++
 CXXFLAGS = -std=c++14 -Wall -MMD -g
 EXEC = vm
-OBJECTS = main.o view.o utils.o model.o
+OBJECTS = main.o view.o utils.o model.o controller.o action.o
 DEPENDS = ${OBJECTS:.o=.d}
 
 ${EXEC}: ${OBJECTS}

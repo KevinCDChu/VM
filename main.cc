@@ -38,17 +38,18 @@ int main(int argc, char * argv[]) {
     logic.lines = lines;
     Window *window = new Window;
     Bar *bar = new Bar;
-    logic.views.push_back(bar);
-    logic.views.push_back(window);
+    Keyboard *keyboard = new Keyboard;
+    logic.addView(bar);
+    logic.addView(window);
+    logic.addController(keyboard);
     logic.filename = argv[1];
     logic.updateViews();
     logic.displayViews();
-    int ch;
     while(!logic.complete) {
-        ch = getch();
         logic.updateViews();
-        logic.interpret_input(ch);
+        logic.interpret_input();
         logic.displayViews();
     }
     endwin();
-}
+}
+
