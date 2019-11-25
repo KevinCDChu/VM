@@ -132,8 +132,7 @@ class Logic : public Model {
     }
     void interpret_input() {
         cntrl->genAction();
-        Action *a = cntrl->getAction();
-        int ch = a->getchar();
+        int ch = cntrl->getAction()->getchar();
         if(ch == 27) {
             insert_mode = false; // escape key
             cmdstr = "";
