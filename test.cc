@@ -132,7 +132,7 @@ class Logic : public Model {
             ++cursor_y;
             clear();
         } else { 
-            if(lines[cur_line].size() == 0) lines[cur_line] = ch;
+            if(lines[cur_line].size() == 0) lines[cur_line] = std::to_string(ch);
             else lines[cur_line] = lines[cur_line].substr(0,cursor_x) + static_cast<char>(ch) + lines[cur_line].substr(cursor_x, static_cast<int>(lines[cur_line].size()) - cursor_x);
             ++cursor_x;
         }
@@ -149,7 +149,7 @@ class Logic : public Model {
     void interpret_input(int ch) {
         if(ch == 27) insert_mode = false; // escape key
         else if(insert_mode) {
-            cursor_x = std::min(cursor_x, static_cast<int>(lines[cursor_y + offset].size() - 1));
+            cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size() - 1), 0));
             addCharacter(ch);
         }
         else if(ch == 'i') insert_mode = true;
