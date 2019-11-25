@@ -18,8 +18,9 @@ class View {
   public:
 
     virtual int getHeight() = 0;
+    virtual int getWidth() = 0;
     virtual void updateView() = 0;
-    virtual void displayView(std::vector<std::string> &lines, const int &cursor_y, const int &cursor_x, const int &offset) = 0;
+    virtual void displayView(std::vector<std::string> &lines, const int &cursor_y, const int &cursor_x, const int &offset, const std::string &cmdstr) = 0;
 
 
 
@@ -30,18 +31,20 @@ class Window : public View {
     public:
     
     int height;
+    int width;
 
     Window() { updateView(); }
 
     int getHeight() { return height; }
 
+    int getWidth() { return width; }
+
     void updateView() override {
-        int width;
         getmaxyx(stdscr, height, width);
         height -= 2;
     }
 
-    void displayView(std::vector<std::string> &lines, const int &cursor_y,const  int &cursor_x, const int &offset) override {
+    void displayView(std::vector<std::string> &lines, const int &cursor_y,const  int &cursor_x, const int &offset, const std::string &cmdstr) override {
         move(0, 0);
         for(int i = 0; i <= height; ++i) {
             if(i + offset < static_cast<int>(lines.size())) printw(lines[i + offset]); // print out line
@@ -58,6 +61,51 @@ class Window : public View {
 };
 
 
+class Bar : public View {
+    public:
+    
+    int height;
+    int width;
+
+    Bar() { updateView(); }
+
+    int getHeight() { return height; }
+
+    int getWidth() { return width; }
+
+    void updateView() override {
+        getmaxyx(stdscr, height, width);
+        height -= 2;
+    }
+
+    void displayView(std::vector<std::string> &lines, const int &cursor_y, const int &cursor_x, const int &offset, const std::string &cmdstr) override {
+        clear();
+        move(height + 1, 0);
+        printw(cmdstr);
+
+        if (cmdstr == "") {
+            move (height + 1, width - 4);
+            printw("All");
+
+            move (height + 1, width - 18);
+            std::string y = std::to_string(cursor_y + offset + 1);
+            std::string x = std::to_string(std::min(cursor_x + 1, std::max(static_cast<int>(lines[cursor_y+offset].size()), 1)));
+            std::string loc = y + "," + x;
+            std::string blan = "";
+
+            for(int i = 0; i < static_cast<int>(13 - loc.size()); ++i) {
+                blan += " ";
+            }
+
+            loc += blan;
+            printw(loc);
+        }
+
+        move(cursor_y, std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size() - 1), 0))); // take min as we might have overshoot from previous line
+        refresh();
+        
+    }
+};
 
 
 class Model {
@@ -74,7 +122,9 @@ class Model {
 class Logic : public Model {
     public:
     bool insert_mode = false; // True if insert mode, false if command mode
+    bool botinsert_mode = false;
     std::vector<std::string> lines;
+    std::string cmdstr = "";
     int offset = 0;
     int cursor_x = 0;
     int cursor_y = 0;
@@ -145,21 +195,49 @@ class Logic : public Model {
         }
     }
 
+    void addBotCharacter(int ch) {
+        if (ch == 127) {
+            cmdstr = cmdstr.substr(0, cmdstr.size() - 1);
+        }
+        else {
+            cmdstr += static_cast<char>(ch);
+        }
+    }
+
     void addView(View *v) { views.push_back(v); }
     void updateViews() {
         for(auto &i : views) i->updateView();
     }
     void displayViews() {
         updateViews();
-        for(auto &i : views) i->displayView(lines, cursor_y, cursor_x, offset);
+        for(auto &i : views) i->displayView(lines, cursor_y, cursor_x, offset, cmdstr);
     }
     void interpret_input(int ch) {
-        if(ch == 27) insert_mode = false; // escape key
+        if(ch == 27) {
+            insert_mode = false; // escape key
+            cmdstr = "";
+            botinsert_mode = false;
+            clear();
+        }
         else if(insert_mode) {
             cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size() - 1), 0));
             addCharacter(ch);
         }
+        else if(botinsert_mode) {
+            if(ch == '\n') {
+                cmdstr = "";
+                botinsert_mode = false;
+                clear();
+            }
+            else {
+                addBotCharacter(ch);
+            }
+        }
         else if(ch == 'i') insert_mode = true;
+        else if(ch == ':') {
+            cmdstr = ":";
+            botinsert_mode = true;
+        }
         else if(ch == 'h') cursor_left();
         else if(ch == 'j') cursor_down();
         else if(ch == 'k') cursor_up();
@@ -196,10 +274,12 @@ int main() {
     Logic logic;
     logic.lines = lines;
     Window *window = new Window;
+    Bar *bar = new Bar;
+    logic.views.push_back(bar);
     logic.views.push_back(window);
     logic.updateViews();
     logic.displayViews();
-    int ch = getch();
+    int ch = 'a';
     while(ch != 'p') {
         ch = getch();
         logic.updateViews();
