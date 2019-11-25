@@ -164,7 +164,7 @@ class Logic : public Model {
 
     void addCharacter(int ch) {
         int cur_line = cursor_y + offset;
-        if(ch == 127) {
+        if(ch == 127) { // Backspace key
             if(cursor_x == 0) {
                 if(cur_line) { 
                     cursor_x = static_cast<int>(lines[cur_line - 1].size());
@@ -178,11 +178,12 @@ class Logic : public Model {
                 --cursor_x;
             }
         clear();
-        } else if(ch == 10) {
+        } else if(ch == 10) { // Enter key
             lines.insert(lines.begin() + cur_line + 1, lines[cur_line].substr(cursor_x, lines[cur_line].size() - cursor_x));
             lines[cur_line] = lines[cur_line].substr(0, cursor_x);
             cursor_x = 0;
-            ++cursor_y;
+            if(cursor_y == views[0]->getHeight()) ++offset;
+            else ++cursor_y;
             clear();
         } else { 
             if(lines[cur_line].size() == 0) {
@@ -223,11 +224,11 @@ class Logic : public Model {
             clearbottom(views[0]->getHeight());
         }
         else if(insert_mode) {
-            cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size() - 1), 0));
+            cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size() - 1), 0)); // Fix cursor-x
             addCharacter(ch);
         }
         else if(botinsert_mode) {
-            if(ch == '\n') {
+            if(ch == '\n' || (cmdstr.size() == 1 && ch == 127)) {
                 cmdstr = "";
                 botinsert_mode = false;
                 clear();
