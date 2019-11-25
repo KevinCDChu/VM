@@ -1,64 +1,8 @@
-#include <ncurses.h>
-#include <iostream>
-#include <fstream>
-#include <vector>
+#ifndef MODEL_H
+#define MODEL_H
+#include "view.h"
 #include <string>
-#include <algorithm>
-
-
-
-void printw(std::string str) {
-    printw(str.c_str());
-}
-
-
-
-
-class View {
-  public:
-
-    virtual int getHeight() = 0;
-    virtual void updateView() = 0;
-    virtual void displayView(std::vector<std::string> &lines, const int &cursor_y, const int &cursor_x, const int &offset) = 0;
-
-
-
-};
-
-
-class Window : public View {
-    public:
-    
-    int height;
-
-    Window() { updateView(); }
-
-    int getHeight() { return height; }
-
-    void updateView() override {
-        int width;
-        getmaxyx(stdscr, height, width);
-        height -= 2;
-    }
-
-    void displayView(std::vector<std::string> &lines, const int &cursor_y,const  int &cursor_x, const int &offset) override {
-        move(0, 0);
-        for(int i = 0; i <= height; ++i) {
-            if(i + offset < static_cast<int>(lines.size())) printw(lines[i + offset]); // print out line
-            else {
-                attron(COLOR_PAIR(1));
-                printw("~");
-            }
-            printw("\n");
-        }
-        attroff(COLOR_PAIR(1));
-        move(cursor_y, std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size() - 1), 0))); // take min as we might have overshoot from previous line
-        refresh();
-    }
-};
-
-
-
+#include <vector>
 
 class Model {
   public:
@@ -73,11 +17,26 @@ class Model {
 
 class Logic : public Model {
     public:
+    bool complete = false;
     bool insert_mode = false; // True if insert mode, false if command mode
+    bool botinsert_mode = false;
+    std::string filename;
     std::vector<std::string> lines;
+    std::string cmdstr = "";
     int offset = 0;
     int cursor_x = 0;
     int cursor_y = 0;
+
+
+    void save_file() {
+        std::ofstream myfile;
+        myfile.open(filename);
+        for(size_t i = 0; i < lines.size(); ++i) {
+            myfile << lines[i];
+            if(i != lines.size() - 1) myfile << "\n";
+        }
+        myfile.close();
+    }
 
     void cursor_up() { // move cursor up
     if(cursor_y > 0 && cursor_y <= 5) { 
@@ -91,7 +50,7 @@ class Logic : public Model {
 
     void cursor_down() { // move cursor down
             if(views[0]->getHeight() - cursor_y <= 5) {
-                scrl(1);
+                if(cursor_y != views[0]->getHeight() + offset) scrl(1);
                 if(offset + views[0]->getHeight() < static_cast<int>(lines.size()) - 1) offset += 1;
                 if(offset + views[0]->getHeight() == static_cast<int>(lines.size()) - 1) cursor_y = std::min(cursor_y + 1, views[0]->getHeight());
             }
@@ -111,7 +70,7 @@ class Logic : public Model {
 
     void addCharacter(int ch) {
         int cur_line = cursor_y + offset;
-        if(ch == 127) {
+        if(ch == 127) { // Backspace key
             if(cursor_x == 0) {
                 if(cur_line) { 
                     cursor_x = static_cast<int>(lines[cur_line - 1].size());
@@ -125,16 +84,33 @@ class Logic : public Model {
                 --cursor_x;
             }
         clear();
-        } else if(ch == 10) {
+        } else if(ch == 10) { // Enter key
             lines.insert(lines.begin() + cur_line + 1, lines[cur_line].substr(cursor_x, lines[cur_line].size() - cursor_x));
             lines[cur_line] = lines[cur_line].substr(0, cursor_x);
             cursor_x = 0;
-            ++cursor_y;
+            if(cursor_y == views[0]->getHeight()) ++offset;
+            else ++cursor_y;
             clear();
         } else { 
-            if(lines[cur_line].size() == 0) lines[cur_line] = std::to_string(ch);
-            else lines[cur_line] = lines[cur_line].substr(0,cursor_x) + static_cast<char>(ch) + lines[cur_line].substr(cursor_x, static_cast<int>(lines[cur_line].size()) - cursor_x);
-            ++cursor_x;
+            if(lines[cur_line].size() == 0) {
+                std::string new_line = "";
+                new_line += ch;
+                new_line += " ";
+                lines[cur_line] = new_line;
+                cursor_x = 1;
+            } else {
+                lines[cur_line] = lines[cur_line].substr(0,cursor_x) + static_cast<char>(ch) + lines[cur_line].substr(cursor_x, static_cast<int>(lines[cur_line].size()) - cursor_x);
+                ++cursor_x;
+            }
+        }
+    }
+
+    void addBotCharacter(int ch) {
+        if (ch == 127) {
+            cmdstr = cmdstr.substr(0, cmdstr.size() - 1);
+        }
+        else {
+            cmdstr += static_cast<char>(ch);
         }
     }
 
@@ -144,15 +120,44 @@ class Logic : public Model {
     }
     void displayViews() {
         updateViews();
-        for(auto &i : views) i->displayView(lines, cursor_y, cursor_x, offset);
+        for(auto &i : views) i->displayView(lines, cursor_y, cursor_x, offset, cmdstr);
     }
     void interpret_input(int ch) {
-        if(ch == 27) insert_mode = false; // escape key
+        if(ch == 27) {
+            insert_mode = false; // escape key
+            cmdstr = "";
+            botinsert_mode = false;
+            clearbottom(views[0]->getHeight());
+        }
         else if(insert_mode) {
-            cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size() - 1), 0));
+            cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size() - 1), 0)); // Fix cursor_x constant
             addCharacter(ch);
         }
+        else if(botinsert_mode) {
+            if(ch == 10) { // Pressed enter, do command
+                if(cmdstr == ":wq") {
+                    botinsert_mode = false;
+                    complete = true;
+                    cmdstr = "";
+                    save_file();                    
+                } else if(cmdstr == ":q!") {
+                    botinsert_mode = false;
+                    complete = true;
+                    cmdstr = "";
+                }
+            } else if(cmdstr.size() == 1 && ch == 127) { // backspace out of command
+                cmdstr = "";
+                botinsert_mode = false;
+                clear();
+            } else {
+                addBotCharacter(ch);
+            }
+        }
         else if(ch == 'i') insert_mode = true;
+        else if(ch == ':') {
+            cmdstr = ":";
+            botinsert_mode = true;
+        }
         else if(ch == 'h') cursor_left();
         else if(ch == 'j') cursor_down();
         else if(ch == 'k') cursor_up();
@@ -161,50 +166,4 @@ class Logic : public Model {
 };
 
 
-
-
-
-
-int main() {
-    initscr();
-    start_color();
-    init_pair(1, COLOR_BLUE, COLOR_BLACK);
-    scrollok(stdscr, true);
-    cbreak();
-    noecho();
-    std::ifstream f{"test.txt"};
-    f >> std::noskipws;
-    char c;
-    std::vector<std::string> lines;
-    std::string cur_line;
-    while(f >> c) {
-        if(c == '\n') {
-            lines.push_back(cur_line);
-            cur_line = "";
-        } else {
-        cur_line += c;
-        }
-    }
-    if(cur_line != "") lines.push_back(cur_line);  
-    Logic logic;
-    logic.lines = lines;
-    Window *window = new Window;
-    logic.views.push_back(window);
-    logic.updateViews();
-    logic.displayViews();
-    int ch = getch();
-    while(ch != 'p') {
-        ch = getch();
-        logic.updateViews();
-        logic.interpret_input(ch);
-        logic.displayViews();
-    }
-    std::ofstream myfile;
-    myfile.open ("test.txt");
-    for(size_t i = 0; i < logic.lines.size(); ++i) {
-        myfile << logic.lines[i];
-        if(i != lines.size() - 1) myfile << "\n";
-    }
-    myfile.close();
-    endwin();
-}
+#endif
