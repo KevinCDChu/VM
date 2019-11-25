@@ -74,21 +74,30 @@ class Bar : public View {
         move(height + 1, 0);
         printw(cmdstr);
 
-        if (cmdstr == "") {
+        if (cmdstr == "" || cmdstr[0] != ':') {
             move (height + 1, width - 4);
-            printw("All");
+            if ((static_cast<int>(lines.size()) < height + 2) && (offset == 0)) {
+                printw("All");
+            }
+            else {
+                if (offset == 0) {
+                    printw("Top");
+                }
+                else if ((static_cast<int>(lines.size()) - height - 1) == offset) {
+                    printw("Bot");
+                }
+                else {
+                    int perc = (100*offset)/(static_cast<int>(lines.size()) - height - 1);
+                    std::string percs = std::to_string(perc) + "%%";
+                    printw(percs);
+                }
+            }
+            
 
             move (height + 1, width - 18);
             std::string y = std::to_string(cursor_y + offset + 1);
             std::string x = std::to_string(std::min(cursor_x + 1, std::max(static_cast<int>(lines[cursor_y+offset].size()), 1)));
             std::string loc = y + "," + x;
-            std::string blan = "";
-
-            for(int i = 0; i < static_cast<int>(13 - loc.size()); ++i) {
-                blan += " ";
-            }
-
-            loc += blan;
             printw(loc);
         }
 

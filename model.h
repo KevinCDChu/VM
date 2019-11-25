@@ -153,7 +153,10 @@ class Logic : public Model {
                 addBotCharacter(ch);
             }
         }
-        else if(ch == 'i') insert_mode = true;
+        else if(ch == 'i') {
+            insert_mode = true;
+            cmdstr = "-- INSERT --";
+        }
         else if(ch == ':') {
             cmdstr = ":";
             botinsert_mode = true;
@@ -164,6 +167,5 @@ class Logic : public Model {
         else if(ch == 'l') cursor_right();
     }
 };
-
 
 #endif
