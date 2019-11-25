@@ -78,12 +78,13 @@ class Logic : public Model {
                     lines.erase(lines.begin() + cur_line);
                     if(cursor_y > 0) --cursor_y;
                     else --offset;
+                    clear();
                 }
             } else {
                 lines[cur_line]  = lines[cur_line].substr(0, cursor_x - 1) + lines[cur_line].substr(cursor_x, static_cast<int>(lines[cur_line].size() - cursor_x));
+                clearline(cursor_y);
                 --cursor_x;
             }
-        clear();
         } else if(ch == 10) { // Enter key
             lines.insert(lines.begin() + cur_line + 1, lines[cur_line].substr(cursor_x, lines[cur_line].size() - cursor_x));
             lines[cur_line] = lines[cur_line].substr(0, cursor_x);
@@ -148,7 +149,7 @@ class Logic : public Model {
             } else if(cmdstr.size() == 1 && ch == 127) { // backspace out of command
                 cmdstr = "";
                 botinsert_mode = false;
-                clear();
+                clearbottom(views[0]->getHeight());
             } else {
                 addBotCharacter(ch);
             }

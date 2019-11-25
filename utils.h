@@ -12,5 +12,10 @@ void clearbottom(int height) {
     clrtoeol();
 }
 
+void clearline(int line) {
+    move(line, 0);
+    clrtoeol();
+}
+
 
 #endif
