@@ -82,8 +82,8 @@ class Logic : public Model {
                 }
             } else {
                 lines[cur_line]  = lines[cur_line].substr(0, cursor_x - 1) + lines[cur_line].substr(cursor_x, static_cast<int>(lines[cur_line].size() - cursor_x));
-                clearline(cursor_y);
                 --cursor_x;
+                clearline();
             }
         } else if(ch == 10) { // Enter key
             lines.insert(lines.begin() + cur_line + 1, lines[cur_line].substr(cursor_x, lines[cur_line].size() - cursor_x));
