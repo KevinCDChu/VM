@@ -149,6 +149,7 @@ class Logic : public Model {
     void interpret_input() {
         cntrl->genAction();
         int ch = cntrl->getAction()->getchar();
+        //std::cout << ch << std::endl;
         if(ch == 27) {
             insert_mode = false; // escape key
             cmdstr = "";
@@ -157,7 +158,18 @@ class Logic : public Model {
             clearbottom(views[0]->getHeight());
         }
         else if(insert_mode) {
-            cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size()), 0)); // Fix cursor_x constant
+            if(cursor_x != static_cast<int>(lines[cursor_y + offset].size())) cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size() - 1), 0)); // Fix cursor_x constant
+            if(ch == KEY_DC) { // delete key == move cursor foward and backspacea
+                if(cursor_x == static_cast<int>(lines[cursor_y + offset].size())) { // we are at the end of the line
+                    if(cursor_y + offset == static_cast<int>(lines.size())) return; // do nothing if at end of file
+                    ++cursor_y;
+                    cursor_x = 0;
+                    ch = 127;
+                } else {
+                    ++cursor_x;
+                    ch = 127;
+                }
+            }
             addCharacter(ch);
         }
         else if(botinsert_mode) {
@@ -183,6 +195,7 @@ class Logic : public Model {
         else if(ch == 'i') {
             insert_mode = true;
             cmdstr = "-- INSERT --";
+            cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size()) - 1, 0));
         }
         else if(ch == ':') {
             cmdstr = ":";
