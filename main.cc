@@ -39,8 +39,8 @@ int main(int argc, char * argv[]) {
     Window *window = new Window;
     Bar *bar = new Bar;
     Keyboard *keyboard = new Keyboard;
-    logic.addView(bar);
     logic.addView(window);
+    logic.addView(bar);
     logic.addController(keyboard);
     logic.filename = argv[1];
     logic.updateViews();

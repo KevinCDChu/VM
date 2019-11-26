@@ -41,7 +41,7 @@ class Window : public View {
         for(int i = 0; i <= height - print_offset; ++i) {
             if(i + offset < static_cast<int>(lines.size())) { 
                 printw(lines[i + offset]); // print out line
-                if(static_cast<int>(lines[i + offset].size()) - 1 > width - 1) print_offset += (((lines[i + offset].size() - 1) / (width - 1)));
+                //if(static_cast<int>(lines[i + offset].size()) - 1 > width - 1) print_offset += (((lines[i + offset].size() - 1) / (width - 1)));
             }
             else {
                 attron(COLOR_PAIR(1));
@@ -79,7 +79,6 @@ class Bar : public View {
         move(height + 1, 0);
         if(cmdstr == "E37: No write since last change (add ! to override)") attron(COLOR_PAIR(2));
         printw(cmdstr);
-        if(cmdstr == "E37: No write since last change (add ! to override)") attroff(COLOR_PAIR(2));
         
         if (cmdstr == "" || cmdstr[0] != ':') {
             move (height + 1, width - 4);
@@ -103,11 +102,14 @@ class Bar : public View {
 
             move (height + 1, width - 18);
             std::string y = std::to_string(cursor_y + offset + 1);
-            std::string x = std::to_string(std::min(cursor_x + 1, std::max(static_cast<int>(lines[cursor_y+offset].size()), 1)));
+            std::string x = std::to_string(cursor_x + 1);//std::min(cursor_x + 1, std::max(static_cast<int>(lines[cursor_y+offset].size()), 1)));
             std::string loc = y + "," + x;
             printw(loc);
+            move(cursor_y, std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size() - 1), 0)));
         }
-        move(cursor_y, std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size() - 1), 0))); // take min as we might have overshoot from previous line
+        else {
+            move(cursor_y, std::min(cursor_x, std::max(width - 1, 0)));
+        }
         refresh();
         
     }
