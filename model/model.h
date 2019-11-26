@@ -48,23 +48,36 @@ class Logic : public Model {
         myfile.close();
     }
 
+
+    int get_scroll_up_num() {
+        if(cursor_y + offset != 0) return (lines[cursor_y + offset - 1].size() / views[0]->getWidth()) + 1;
+        else return 0;
+    }
+
+    int get_scroll_down_num() {
+        return (lines[cursor_y + offset].size() / views[0]->getWidth()) + 1;
+        }
+
     void cursor_up() { // move cursor up
     if(cursor_y > 0 && cursor_y <= 5) { 
             if(offset > 0) {
-                offset -= 1;
-                scrl(-1);
+                int scroll_up_num = get_scroll_up_num();
+                if(offset - scroll_up_num > 0) scrl(-scroll_up_num);
+                else scrl(-(scroll_up_num - offset));
+                offset = std::max(0, offset - scroll_up_num);
             }
-        if(offset == 0) --cursor_y;
-        } else cursor_y = std::max(cursor_y - 1, 0);
+        if(offset == 0) cursor_y = std::max(0, cursor_y - get_scroll_up_num());
+        } else cursor_y = std::max(cursor_y - get_scroll_up_num(), 0);
     }
 
     void cursor_down() { // move cursor down
             if(views[0]->getHeight() - cursor_y <= 5) {
-                if(cursor_y != views[0]->getHeight() + offset) scrl(1);
-                if(offset + views[0]->getHeight() < static_cast<int>(lines.size()) - 1) offset += 1;
-                if(offset + views[0]->getHeight() == static_cast<int>(lines.size()) - 1) cursor_y = std::min(cursor_y + 1, views[0]->getHeight());
+                int scroll_down_num = get_scroll_down_num();
+                if(cursor_y != views[0]->getHeight() + offset) scrl(scroll_down_num);
+                if(offset + views[0]->getHeight() < static_cast<int>(lines.size()) - 1) offset += scroll_down_num;
+                if(offset + views[0]->getHeight() == static_cast<int>(lines.size()) - 1) cursor_y = std::min(cursor_y + scroll_down_num, views[0]->getHeight());
             }
-            else cursor_y = std::min(std::min(cursor_y + 1, views[0]->getHeight()), static_cast<int>(lines.size()) - 1 - offset);
+            else cursor_y = std::min(std::min(cursor_y + get_scroll_down_num(), views[0]->getHeight()), static_cast<int>(lines.size()) - 1 - offset);
         }
 
     void cursor_left() { // move cursor left
@@ -120,9 +133,7 @@ class Logic : public Model {
             clear();
         } else { 
             if(lines[cur_line].size() == 0) {
-                std::string new_line = "";
-                new_line += ch;
-                lines[cur_line] = new_line;
+                lines[cur_line] += ch;
                 cursor_x = 1;
             } else {
                 lines[cur_line] = lines[cur_line].substr(0,cursor_x) + static_cast<char>(ch) + lines[cur_line].substr(cursor_x, static_cast<int>(lines[cur_line].size()) - cursor_x);
@@ -181,12 +192,12 @@ class Logic : public Model {
     void interpret_input() {
         cntrl->genAction();
         int ch = cntrl->getAction()->getchar();
-        //std::cout << ch << std::endl;
-        if(ch == 27) {
-            insert_mode = false; // escape key
+        if(ch == 27) { // escape key
             cmdstr = "";
             botinsert_mode = false;
             cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size()) - 1, 0));
+            if(insert_mode) cursor_x = std::max(cursor_x - 1, 0);
+            insert_mode = false;
             clearbottom(views[0]->getHeight());
         }
         else if(insert_mode) {
