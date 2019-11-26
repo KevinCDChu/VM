@@ -58,7 +58,7 @@ class Window : public View {
         }
         attroff(COLOR_PAIR(1));
         if(cmdstr != "-- INSERT --") move(adjusty(cursor_x, cursor_y, lines, offset), adjustx(cursor_x, cursor_y, lines, offset));
-        else move(adjustyin(cursor_x, cursor_y, lines, offset), adjustxin(cursor_x, cursor_y, lines, offset));
+        else move(adjusty(cursor_x, cursor_y, lines, offset), adjustxin(cursor_x, cursor_y, lines, offset));
         refresh();
     }
 
@@ -87,11 +87,6 @@ class Window : public View {
     }
 
     int adjusty(int x, int y, std::vector<std::string> lines, int offset) {
-        return y + offsetv[y] + std::min(x/(width-1), offsetv[y + 1] - offsetv[y]);
-    }
-
-    
-    int adjustyin(int x, int y, std::vector<std::string> lines, int offset) {
         return y + offsetv[y] + std::min(x/(width-1), offsetv[y + 1] - offsetv[y]);
     }
 };
