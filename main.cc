@@ -7,7 +7,6 @@
 #include "utils.h"
 #include "model/model.h"
 
-
 int main(int argc, char * argv[]) {
     if(argc != 2) {
         std::cerr << "No file specified" << std::endl;
