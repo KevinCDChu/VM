@@ -228,7 +228,6 @@ class Logic : public Model {
                 cursor_x = prevloc.first;
             } else {
                 addBotCharacter(ch);
-                ++cursor_x;
             }
         }
         else if(ch == 'i') {
