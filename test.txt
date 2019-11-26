@@ -12,23 +12,6 @@ asfjasfjasjlkfaklsflkasjfajlkjasflkask what is the meaning of this what is the m
 #include "view.h"
 #include "utils.h"
 #include "model.h"
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 int main(int argc, char * argv[]) {
     if(argc != 2) {
         std::cerr << "No file specified" << std::endl;

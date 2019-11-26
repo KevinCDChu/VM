@@ -82,7 +82,14 @@ std::regex init_keywords() {
     str += "return|";
     str += ";?if( )*\\(|";
     str += ";?for( )*\\(|";
-    str += ":?public";
+    str += ";?while( )*\\(|";
+    str += "}?else*\\(|";
+    str += " new|";
+    str += ":?public|";
+    str += ":?protected|";
+    str += ":?private";
+
+
     std::regex re(str);
     return re;
 }
