@@ -76,7 +76,6 @@ class Bar : public View {
         if(cmdstr == "E37: No write since last change (add ! to override)") attron(COLOR_PAIR(2));
         printw(cmdstr);
         if(cmdstr == "E37: No write since last change (add ! to override)") attroff(COLOR_PAIR(2));
-
         if (cmdstr == "" || cmdstr[0] != ':') {
             move (height + 1, width - 4);
             if ((static_cast<int>(lines.size()) < height + 2) && (offset == 0)) {

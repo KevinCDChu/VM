@@ -122,7 +122,6 @@ class Logic : public Model {
             if(lines[cur_line].size() == 0) {
                 std::string new_line = "";
                 new_line += ch;
-                new_line += " ";
                 lines[cur_line] = new_line;
                 cursor_x = 1;
             } else {
