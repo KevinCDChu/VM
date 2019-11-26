@@ -81,7 +81,7 @@ class Window : public View {
             maxy = (offsetv[y + 1] - offsetv[y])*width - 1;
         }
         else {
-            maxy = std::max(static_cast<int>(lines[y + offset].size() - 1), 0);
+            maxy = std::max(static_cast<int>(lines[y + offset].size()), 0);
         }
         return std::min(minx, maxy)%(width); 
     }
@@ -138,6 +138,7 @@ class Bar : public View {
             std::string x = std::to_string(std::min(cursor_x + 1, std::max(static_cast<int>(lines[cursor_y+offset].size()), 1)));
             std::string loc = y + "," + x;
             printw(loc);
+
             if(cmdstr != "-- INSERT --") move(cursor_y, std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size() - 1), 0)));
             else move(cursor_y, std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size()), 0)));
         }
