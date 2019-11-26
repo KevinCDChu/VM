@@ -65,29 +65,29 @@ class Window : public View {
     int adjustx(int x, int y, std::vector<std::string> &lines, int offset) {
         int minx = x;
         int maxy = 0;
-        if (x/(width-1) < offsetv[y + 1] - offsetv[y]) {
-            maxy = width - 1;
+        if (x/(width) < offsetv[y + 1] - offsetv[y]) {
+            maxy = (offsetv[y + 1] - offsetv[y])*width - 1;
         }
         else {
             maxy = std::max(static_cast<int>(lines[y + offset].size() - 1), 0);
         }
-        return std::min(minx, maxy)%(width-1); 
+        return std::min(minx, maxy)%(width); 
     }
 
     int adjustxin(int x, int y, std::vector<std::string> &lines, int offset) {
         int minx = x;
         int maxy = 0;
-        if (x/(width-1) < offsetv[y + 1] - offsetv[y]) {
-            maxy = width - 1;
+        if (x/(width) < offsetv[y + 1] - offsetv[y]) {
+            maxy = (offsetv[y + 1] - offsetv[y])*width - 1;
         }
         else {
             maxy = std::max(static_cast<int>(lines[y + offset].size()), 0);
         }
-        return std::min(minx, maxy)%(width-1); 
+        return std::min(minx, maxy)%(width); 
     }
 
     int adjusty(int x, int y, std::vector<std::string> &lines, int offset) {
-        return y + offsetv[y] + std::min(x/(width-1), offsetv[y + 1] - offsetv[y]);
+        return y + offsetv[y] + std::min(x/(width), offsetv[y + 1] - offsetv[y]);
     }
 };
 
@@ -138,6 +138,7 @@ class Bar : public View {
             std::string x = std::to_string(std::min(cursor_x + 1, std::max(static_cast<int>(lines[cursor_y+offset].size()), 1)));
             std::string loc = y + "," + x;
             printw(loc);
+
             if(cmdstr != "-- INSERT --") move(cursor_y, std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size() - 1), 0)));
             else move(cursor_y, std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size()), 0)));
         }

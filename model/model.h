@@ -254,6 +254,11 @@ class Logic : public Model {
         else if(ch == 'j') cursor_down();
         else if(ch == 'k') cursor_up();
         else if(ch == 'l') cursor_right();
+        else if(ch == 'a') {
+            if(cursor_x < static_cast<int>(lines[cursor_y + offset].size())) ++cursor_x;
+            insert_mode = true;
+            cmdstr = "-- INSERT --";
+        }
         else if(ch == 'A') {
             // store undo command ALSO NOTE MAYBE WE SHOULD HAVE A "PUT INTO INSERT MODE" COMMAND AS WE WILL NEED IT FOR A FEW DIFFERENT COMMANDS
             cursor_x = lines[cursor_y + offset].size();
