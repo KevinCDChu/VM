@@ -38,11 +38,9 @@ class Window : public View {
 
     void displayView(std::vector<std::string> &lines, const int &cursor_y,const  int &cursor_x, const int &offset, const std::string &cmdstr) override {
         move(0, 0);
-        int print_offset = 0; // keep track of any lines that are wrapped
-        for(int i = 0; i <= height - print_offset; ++i) {
+        for(int i = 0; i <= height; ++i) {
             if(i + offset < static_cast<int>(lines.size())) { 
                 myprintw(lines[i + offset]); // print out line
-                //if(static_cast<int>(lines[i + offset].size()) - 1 > width - 1) print_offset += (((lines[i + offset].size() - 1) / (width - 1)));
             }
             else {
                 attron(COLOR_PAIR(1));

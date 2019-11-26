@@ -157,7 +157,8 @@ class Logic : public Model {
             complete = true;
             cmdstr = "";
             save_file();                    
-        } else if(cmd == ":q!") {
+        } 
+        else if(cmd == ":q!") {
             botinsert_mode = false;
             complete = true;
             cmdstr = "";
@@ -191,11 +192,17 @@ class Logic : public Model {
         int ch = cntrl->getAction()->getchar();
         if(ch == 27) { // escape key
             cmdstr = "";
-            botinsert_mode = false;
-            if(cursor_x != static_cast<int>(lines[cursor_y + offset].size())) cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size()) - 1, 0));
-            if(insert_mode) cursor_x = std::max(cursor_x - 1, 0);
-            insert_mode = false;
-            clearbottom(views[0]->getHeight());
+            if (botinsert_mode) {
+                botinsert_mode = false;
+                clearbottom(views[0]->getHeight());
+                cursor_y = prevloc.second;
+                cursor_x = prevloc.first;
+            }
+            if(insert_mode) {
+                if(cursor_x != static_cast<int>(lines[cursor_y + offset].size())) cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size()) - 1, 0));
+                cursor_x = std::max(cursor_x - 1, 0);
+                insert_mode = false;
+            }
         }
         else if(insert_mode) {
             if(cursor_x != static_cast<int>(lines[cursor_y + offset].size())) cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size() - 1), 0)); // Fix cursor_x constant
