@@ -1,24 +1,13 @@
 #d
 e <iostream>
 #include <fstream>
-#include <vector> 
-
+#include <vector>
 #include <string>
-#include <algorithm>
+#include <algorithm>what is the meaning of this
 ;awhjrhkajhrjk  //kfjasjfkasjfklajslfjafjasjfkas ///t
 
 rrrrrrrrrrrrrrrrakjsflkasjflkasjflkajsflj
-
-asfjasfjasjlkfaklsflkasjfajlkjasflkasklfalsjflkjl
-
-
-
-
-
-
-
-
-
+asfjasfjasjlkfaklsflkasjfajlkjasflkask what is the meaning of this what is the meaning of this
 
 #include "view.h"
 #include "utils.h"
