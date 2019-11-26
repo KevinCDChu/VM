@@ -6,9 +6,6 @@
 #include "../utils.h"
 #include "printing.h"
 
-
-
-
 class View {
   public:
     int height;
