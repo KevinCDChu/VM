@@ -179,7 +179,14 @@ class Logic : public Model {
     }
     void displayViews() {
         updateViews();
-        for(auto &i : views) i->displayView(lines, cursor_y, cursor_x, offset, cmdstr);
+        if (botinsert_mode) {
+            for(auto &i : views) i->displayView(lines, cursor_y, cursor_x, offset, cmdstr);
+        }
+        else {
+            for(int i = views.size() - 1; i >= 0; --i) {
+                views[i]->displayView(lines, cursor_y, cursor_x, offset, cmdstr);
+            }
+        }
     }
     void interpret_input() {
         cntrl->genAction();

@@ -11,6 +11,8 @@
 
 class View {
   public:
+    int height;
+    int width;
     virtual int getHeight() = 0;
     virtual int getWidth() = 0;
     virtual void updateView() = 0;
@@ -22,8 +24,8 @@ class View {
 class Window : public View {
     public:
     
-    int height;
-    int width;
+    std::vector<int> offsetv;
+
 
     Window() { updateView(); }
 
@@ -39,11 +41,14 @@ class Window : public View {
     void displayView(std::vector<std::string> &lines, const int &cursor_y,const  int &cursor_x, const int &offset, const std::string &cmdstr) override {
         move(0, 0);
         int offs = 0;
+        std::vector<int> tmp (height + 2, 0);
+        offsetv = std::move(tmp);
         for(int i = 0; i <= height - offs; ++i) {
             if(i + offset < static_cast<int>(lines.size())) { 
                 myprintw(lines[i + offset]); // print out line
-                int off = std::max(static_cast<int>(lines[i].size() - 1), 0)/(width - 1);
+                int off = std::max(static_cast<int>(lines[i + offset].size() - 1), 0)/(width - 1);
                 offs += off;
+                offsetv[i + 1] = offs;
             }
             else {
                 attron(COLOR_PAIR(1));
@@ -52,18 +57,48 @@ class Window : public View {
             printw("\n");
         }
         attroff(COLOR_PAIR(1));
-        if(cmdstr != "-- INSERT --") move(cursor_y, std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size() - 1), 0))); // take min as we might have overshoot from previous line
-        else move(cursor_y, std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size()), 0))); // Allowed to be at end of line if insert mode
+        if(cmdstr != "-- INSERT --") move(adjusty(cursor_x, cursor_y, lines, offset), adjustx(cursor_x, cursor_y, lines, offset));
+        else move(adjustyin(cursor_x, cursor_y, lines, offset), adjustxin(cursor_x, cursor_y, lines, offset));
         refresh();
+    }
+
+    int adjustx(int x, int y, std::vector<std::string> lines, int offset) {
+        int minx = x%(width-1);
+        int maxy = 0;
+        if (x/(width-1) < offsetv[y + 1] - offsetv[y]) {
+            maxy = width - 1;
+        }
+        else {
+            maxy = std::max(static_cast<int>(lines[y + offset].size() - 1), 0)%(width-1);
+        }
+        return std::min(minx, maxy); 
+    }
+
+    int adjustxin(int x, int y, std::vector<std::string> lines, int offset) {
+        int minx = x%(width-1);
+        int maxy = 0;
+        if (x/(width-1) < offsetv[y + 1] - offsetv[y]) {
+            maxy = width - 1;
+        }
+        else {
+            maxy = std::max(static_cast<int>(lines[y + offset].size()), 0)%(width-1);
+        }
+        return std::min(minx, maxy); 
+    }
+
+    int adjusty(int x, int y, std::vector<std::string> lines, int offset) {
+        return y + offsetv[y] + std::min(x/(width-1), offsetv[y + 1] - offsetv[y]);
+    }
+
+    
+    int adjustyin(int x, int y, std::vector<std::string> lines, int offset) {
+        return y + offsetv[y] + std::min(x/(width-1), offsetv[y + 1] - offsetv[y]);
     }
 };
 
 
 class Bar : public View {
     public:
-    
-    int height;
-    int width;
 
     Bar() { updateView(); }
 
