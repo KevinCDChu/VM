@@ -15,8 +15,7 @@ int main(int argc, char * argv[]) {
     }
     initscr();
     start_color();
-    init_pair(1, COLOR_BLUE, COLOR_BLACK);
-    init_pair(2, COLOR_WHITE, COLOR_RED);
+    init_colours(true);
     scrollok(stdscr, true);
     cbreak();
     noecho();

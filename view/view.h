@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include "../utils.h"
+#include "printing.h"
 
 
 
@@ -40,7 +41,7 @@ class Window : public View {
         int print_offset = 0; // keep track of any lines that are wrapped
         for(int i = 0; i <= height - print_offset; ++i) {
             if(i + offset < static_cast<int>(lines.size())) { 
-                printw(lines[i + offset]); // print out line
+                myprintw(lines[i + offset]); // print out line
                 //if(static_cast<int>(lines[i + offset].size()) - 1 > width - 1) print_offset += (((lines[i + offset].size() - 1) / (width - 1)));
             }
             else {
@@ -79,7 +80,7 @@ class Bar : public View {
         move(height + 1, 0);
         if(cmdstr == "E37: No write since last change (add ! to override)") attron(COLOR_PAIR(2));
         printw(cmdstr);
-        
+
         if (cmdstr == "" || cmdstr[0] != ':') {
             move (height + 1, width - 4);
             if ((static_cast<int>(lines.size()) < height + 2) && (offset == 0)) {
@@ -111,7 +112,6 @@ class Bar : public View {
             move(cursor_y, std::min(cursor_x, std::max(width - 1, 0)));
         }
         refresh();
-        
     }
 };
 

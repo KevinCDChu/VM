@@ -61,23 +61,20 @@ class Logic : public Model {
     void cursor_up() { // move cursor up
     if(cursor_y > 0 && cursor_y <= 5) { 
             if(offset > 0) {
-                int scroll_up_num = get_scroll_up_num();
-                if(offset - scroll_up_num > 0) scrl(-scroll_up_num);
-                else scrl(-(scroll_up_num - offset));
-                offset = std::max(0, offset - scroll_up_num);
+                scrl(-1);
+                offset = std::max(0, offset - 1);
             }
-        if(offset == 0) cursor_y = std::max(0, cursor_y - get_scroll_up_num());
-        } else cursor_y = std::max(cursor_y - get_scroll_up_num(), 0);
+        if(offset == 0) cursor_y = std::max(0, cursor_y - 1);
+        } else cursor_y = std::max(cursor_y - 1, 0);
     }
 
     void cursor_down() { // move cursor down
             if(views[0]->getHeight() - cursor_y <= 5) {
-                int scroll_down_num = get_scroll_down_num();
-                if(cursor_y != views[0]->getHeight() + offset) scrl(scroll_down_num);
-                if(offset + views[0]->getHeight() < static_cast<int>(lines.size()) - 1) offset += scroll_down_num;
-                if(offset + views[0]->getHeight() == static_cast<int>(lines.size()) - 1) cursor_y = std::min(cursor_y + scroll_down_num, views[0]->getHeight());
+                if(cursor_y != views[0]->getHeight() + offset) scrl(1);
+                if(offset + views[0]->getHeight() < static_cast<int>(lines.size()) - 1) offset += 1;
+                if(offset + views[0]->getHeight() == static_cast<int>(lines.size()) - 1) cursor_y = std::min(cursor_y + 1, views[0]->getHeight());
             }
-            else cursor_y = std::min(std::min(cursor_y + get_scroll_down_num(), views[0]->getHeight()), static_cast<int>(lines.size()) - 1 - offset);
+            else cursor_y = std::min(std::min(cursor_y + 1, views[0]->getHeight()), static_cast<int>(lines.size()) - 1 - offset);
         }
 
     void cursor_left() { // move cursor left
