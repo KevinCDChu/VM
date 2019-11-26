@@ -195,7 +195,7 @@ class Logic : public Model {
         if(ch == 27) { // escape key
             cmdstr = "";
             botinsert_mode = false;
-            cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size()) - 1, 0));
+            if(cursor_x != static_cast<int>(lines[cursor_y + offset].size())) cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size()) - 1, 0));
             if(insert_mode) cursor_x = std::max(cursor_x - 1, 0);
             insert_mode = false;
             clearbottom(views[0]->getHeight());
@@ -228,7 +228,6 @@ class Logic : public Model {
                 cursor_x = prevloc.first;
             } else {
                 addBotCharacter(ch);
-                ++cursor_x;
             }
         }
         else if(ch == 'i') {
