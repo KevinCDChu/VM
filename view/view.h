@@ -6,6 +6,9 @@
 #include "../utils.h"
 #include "printing.h"
 
+
+
+
 class View {
   public:
     int height;
@@ -59,31 +62,31 @@ class Window : public View {
         refresh();
     }
 
-    int adjustx(int x, int y, std::vector<std::string> lines, int offset) {
-        int minx = x%(width-1);
+    int adjustx(int x, int y, std::vector<std::string> &lines, int offset) {
+        int minx = x;
         int maxy = 0;
         if (x/(width-1) < offsetv[y + 1] - offsetv[y]) {
             maxy = width - 1;
         }
         else {
-            maxy = std::max(static_cast<int>(lines[y + offset].size() - 1), 0)%(width-1);
+            maxy = std::max(static_cast<int>(lines[y + offset].size() - 1), 0);
         }
-        return std::min(minx, maxy); 
+        return std::min(minx, maxy)%(width-1); 
     }
 
-    int adjustxin(int x, int y, std::vector<std::string> lines, int offset) {
-        int minx = x%(width-1);
+    int adjustxin(int x, int y, std::vector<std::string> &lines, int offset) {
+        int minx = x;
         int maxy = 0;
         if (x/(width-1) < offsetv[y + 1] - offsetv[y]) {
             maxy = width - 1;
         }
         else {
-            maxy = std::max(static_cast<int>(lines[y + offset].size()), 0)%(width-1);
+            maxy = std::max(static_cast<int>(lines[y + offset].size()), 0);
         }
-        return std::min(minx, maxy); 
+        return std::min(minx, maxy)%(width-1); 
     }
 
-    int adjusty(int x, int y, std::vector<std::string> lines, int offset) {
+    int adjusty(int x, int y, std::vector<std::string> &lines, int offset) {
         return y + offsetv[y] + std::min(x/(width-1), offsetv[y + 1] - offsetv[y]);
     }
 };
