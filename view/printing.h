@@ -22,14 +22,13 @@ void init_colours(bool code_file) {
 }
 
 
-bool contains_match(std::string str, std::regex re) {
+bool contains_match(std::string &str, std::regex &re) {
     std::smatch match;
     return std::regex_search(str, match, re);
 }
 
 
-void myprintw(std::string line);
-// int,
+void myprintw(std::string &line);
 
 void strip_unnecessary_characters(std::string &first_string, std::string &middle, std::string &end_string, std::string &str) {
     if(middle[middle.length() - 1] == ')' || middle[middle.length() - 1] == ',' || middle[middle.length() - 1] == '(') {
@@ -47,18 +46,20 @@ void strip_unnecessary_characters(std::string &first_string, std::string &middle
 }
 
 
-void myprintw_only_colour_match(std::string str, std::regex re, int colour) { // function assume that match exists!!! 
+void myprintw_helper(std::string &line, int checker);
+
+void myprintw_only_colour_match(std::string &str, std::regex &re, int colour, int checker) { // function assume that match exists!!! 
     std::smatch match;
     std::regex_search(str, match, re);
     std::string first_string;
     std::string middle = match[0];
     std::string end_string;
     strip_unnecessary_characters(first_string, middle, end_string, str); // in case (int or something
-    myprintw(first_string);
+    myprintw_helper(first_string, checker - 1);
     attron(COLOR_PAIR(colour));
     printw(middle);
     attroff(COLOR_PAIR(colour));
-    myprintw(end_string);
+    myprintw_helper(end_string, checker);
 }
 
 
@@ -80,10 +81,10 @@ std::regex init_data_types() {
 std::regex init_keywords() {
     std::string str;
     str += "return|";
-    str += ";?if( )*\\(|";
-    str += ";?for( )*\\(|";
-    str += ";?while( )*\\(|";
-    str += "}?else*\\(|";
+    str += ";?if( )*\\(?|";
+    str += ";?for( )*\\(?|";
+    str += ";?while( )*\\(?|";
+    str += "}?else*\\(?|";
     str += " new|";
     str += ":?public|";
     str += ":?protected|";
@@ -96,7 +97,8 @@ std::regex init_keywords() {
 
 std::regex init_numbers() {
     std::string str;
-    str += "1|2|3|4|5|6|7|8|9|0";
+    str += "1|2|3|4|5|6|7|8|9|0|";
+    str += "true|false";
     std::regex re(str);
     return re;
 }
@@ -109,45 +111,63 @@ std::regex init_string() {
     return re;
 }
 
+std::regex init_comment() {
+    std::regex comment("([^\"])*//([^\"])*");
+    return comment;
+}
+
+std::regex init_preprocessor() {
+    std::regex preprocessor("^( )*#( )*include( )*<.+>|^( )*#( )*include( )*\".+\"|#( )*ifndef( )+([^ ])+|#( )*define( )+([^ ])+|#( )*endif");
+    return preprocessor;
+}
+
 std::regex data_types = init_data_types();
 std::regex keywords = init_keywords();
 std::regex numbers = init_numbers();
 std::regex string = init_string();
+std::regex comment = init_comment();
+std::regex preprocessor = init_preprocessor();
 
 
-void myprintw(std::string line) {
+
+void myprintw_helper(std::string &line, int checker) {
     if(line == "") return;
-    std::regex comment("([^\"])*//([^\"])*");
     std::smatch comment_match;
-    std::regex preprocessor("^( )*#( )*include( )*<.+>|^( )*#( )*include( )*\".+\"|#( )*ifndef( )+([^ ])+|#( )*define( )+([^ ])+|#( )*endif");
-    std::smatch match_preprocessor;
-    if(std::regex_search(line, comment_match, comment)) { //contains comment
-        int comment_idx = line.find("//");
-        myprintw(line.substr(0, comment_idx));
+    //std::smatch match_preprocessor;
+    if(std::regex_search(line, comment_match, comment) && checker >= 8) { //contains comment
+        int comment_idx = 0; // line.find("//");
+        std::string before = line.substr(0, comment_idx);
+        myprintw_helper(before, checker - 1);
         attron(COLOR_PAIR(3));
         printw(line.substr(comment_idx, static_cast<int>(line.size()) - comment_idx));
-        attroff(COLOR_PAIR(3));
-    } else if(std::regex_search(line, match_preprocessor, preprocessor)) { // preprocessor directive
-        std::regex include_part("^( )*#( )*include");
-        std::smatch include_part_match;
-        std::regex_search(line, include_part_match, include_part);
-        attron(COLOR_PAIR(5));
-        printw(include_part_match[0]);
-        attroff(COLOR_PAIR(5));
-        size_t include_start = line.find(include_part_match[0]);
-        attron(COLOR_PAIR(4));
-        printw(line.substr(include_start + include_part_match[0].length(), match_preprocessor[0].length() - (include_start + include_part_match[0].length())));
-        attroff(COLOR_PAIR(4));
-        size_t match_start = line.find(match_preprocessor[0]);
-        myprintw(line.substr(match_start + match_preprocessor[0].length(), line.length() - (match_start + match_preprocessor[0].length())));
-    } 
-    else if(contains_match(line, string)) {myprintw_only_colour_match(line, string, 3); return;}
-    else if(contains_match(line, data_types)) {myprintw_only_colour_match(line, data_types, 6); return;}
-    else if(contains_match(line, keywords)) {myprintw_only_colour_match(line, keywords, 5); return;}
-    else if(contains_match(line, numbers)) {myprintw_only_colour_match(line, numbers, 4); return;}
+        attroff(COLOR_PAIR(3)); }
+    // } else if(std::regex_search(line, match_preprocessor, preprocessor)) { // preprocessor directive
+    //     std::regex include_part("^( )*#( )*include");
+    //     std::smatch include_part_match;
+    //     std::regex_search(line, include_part_match, include_part);
+    //     attron(COLOR_PAIR(5));
+    //     printw(include_part_match[0]);
+    //     attroff(COLOR_PAIR(5));
+    //     size_t include_start = line.find(include_part_match[0]);
+    //     attron(COLOR_PAIR(4));
+    //     printw(line.substr(include_start + include_part_match[0].length(), match_preprocessor[0].length() - (include_start + include_part_match[0].length())));
+    //     attroff(COLOR_PAIR(4));
+    //     size_t match_start = line.find(match_preprocessor[0]);
+    //     std::string rest = line.substr(match_start + match_preprocessor[0].length(), line.length() - (match_start + match_preprocessor[0].length()));
+    //     myprintw_helper(rest, checker);
+    // } 
+    else if(contains_match(line, string) && checker >= 6) {myprintw_only_colour_match(line, string, 3, checker); return;}
+    else if(contains_match(line, data_types) && checker >= 5) {myprintw_only_colour_match(line, data_types, 6, checker); return;}
+    else if(contains_match(line, keywords) && checker >= 4) {myprintw_only_colour_match(line, keywords, 5, checker); return;}
+    else if(contains_match(line, numbers) && checker >= 3) {myprintw_only_colour_match(line, numbers, 4, checker); return;}
     else {
         printw(line);
     } 
+}
+
+
+void myprintw(std::string &line) {
+    myprintw_helper(line, 8);
 }
 
 
