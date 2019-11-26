@@ -105,10 +105,10 @@ class Bar : public View {
 
             move (height + 1, width - 18);
             std::string y = std::to_string(cursor_y + offset + 1);
-            std::string x = std::to_string(cursor_x + 1);//std::min(cursor_x + 1, std::max(static_cast<int>(lines[cursor_y+offset].size()), 1)));
+            std::string x = std::to_string(std::min(cursor_x + 1, std::max(static_cast<int>(lines[cursor_y+offset].size()), 1)));
             std::string loc = y + "," + x;
             printw(loc);
-            if(cmdstr != "-- INSERT --") move(cursor_y, std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size() - 1), 0))); // take min as we might have overshoot from previous line
+            if(cmdstr != "-- INSERT --") move(cursor_y, std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size() - 1), 0)));
             else move(cursor_y, std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size()), 0)));
         }
         else {
