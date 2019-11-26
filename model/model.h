@@ -49,22 +49,13 @@ class Logic : public Model {
     }
 
 
-    int get_scroll_up_num() {
-        if(cursor_y + offset != 0) return (lines[cursor_y + offset - 1].size() / views[0]->getWidth()) + 1;
-        else return 0;
-    }
-
-    int get_scroll_down_num() {
-        return (lines[cursor_y + offset].size() / views[0]->getWidth()) + 1;
-        }
-
     void cursor_up() { // move cursor up
     if(cursor_y > 0 && cursor_y <= 5) { 
             if(offset > 0) {
+                offset -= 1;
                 scrl(-1);
-                offset = std::max(0, offset - 1);
             }
-        if(offset == 0) cursor_y = std::max(0, cursor_y - 1);
+        if(offset == 0) --cursor_y;
         } else cursor_y = std::max(cursor_y - 1, 0);
     }
 
@@ -209,7 +200,7 @@ class Logic : public Model {
         }
         else if(insert_mode) {
             if(cursor_x != static_cast<int>(lines[cursor_y + offset].size())) cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size() - 1), 0)); // Fix cursor_x constant
-            if(ch == KEY_DC) { // delete key == move cursor foward and backspacea
+            if(ch == KEY_DC) { // delete key == move cursor foward and backspace
                 if(cursor_x == static_cast<int>(lines[cursor_y + offset].size())) { // we are at the end of the line
                     if(cursor_y + offset == static_cast<int>(lines.size())) return; // do nothing if at end of file
                     ++cursor_y;
@@ -256,6 +247,12 @@ class Logic : public Model {
         else if(ch == 'j') cursor_down();
         else if(ch == 'k') cursor_up();
         else if(ch == 'l') cursor_right();
+        else if(ch == 'A') {
+            // store undo command ALSO NOTE MAYBE WE SHOULD HAVE A "PUT INTO INSERT MODE" COMMAND AS WE WILL NEED IT FOR A FEW DIFFERENT COMMANDS
+            cursor_x = lines[cursor_y + offset].size();
+            insert_mode = true;
+            cmdstr = "-- INSERT --";
+        }
     }
 };
 

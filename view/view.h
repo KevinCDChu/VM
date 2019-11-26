@@ -109,7 +109,7 @@ class Bar : public View {
             std::string loc = y + "," + x;
             printw(loc);
             if(cmdstr != "-- INSERT --") move(cursor_y, std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size() - 1), 0))); // take min as we might have overshoot from previous line
-            else move(cursor_y, std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size()), 0))); // Allowed to be at end of line if insert mode
+            else move(cursor_y, std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size()), 0)));
         }
         else {
             move(cursor_y, std::min(cursor_x, std::max(width - 1, 0)));

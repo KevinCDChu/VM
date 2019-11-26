@@ -1,34 +1,13 @@
-#include <ncurses.h>
-#includ
-
+#d
 e <iostream>
 #include <fstream>
-#include <vector>hat   >
-#include <string > 
-
-#include <algori
-thm>
-
-
+#include <vector>
+#include <string>
+#include <algorithm>what is the meaning of this
 ;awhjrhkajhrjk  //kfjasjfkasjfklajslfjafjasjfkas ///t
 
-rrrrrrrrrrrrrrrrakjsflkasjflkasjflkajsflj a
-
-
-
-
-
-
-asfjasfjasjlkfaklsflkasjfajlkjasflkasklfalsjflkjl
-
-
-
-
-
-
-
-
-
+rrrrrrrrrrrrrrrrakjsflkasjflkasjflkajsflj
+asfjasfjasjlkfaklsflkasjfajlkjasflkask what is the meaning of this what is the meaning of this
 
 #include "view.h"
 #include "utils.h"

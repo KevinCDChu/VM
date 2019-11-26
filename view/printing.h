@@ -11,15 +11,18 @@ void init_colours(bool code_file) {
     if(code_file) {
         init_pair(3, COLOR_GREEN, COLOR_BLACK);
         init_pair(4, COLOR_CYAN, COLOR_BLACK);
+        init_pair(5, COLOR_YELLOW, COLOR_BLACK);
     } else {
         init_pair(3, COLOR_WHITE, COLOR_BLACK);
         init_pair(4, COLOR_WHITE, COLOR_BLACK);
+        init_pair(5, COLOR_WHITE, COLOR_BLACK);
     }
 }
 
 
 void myprintw(std::string line) {
-    std::regex preprocessor("^( )*#( )*include( )*<.+>|^( )*#( )*include( )*\".+\"|^( )*#( )*include( )*<.+>|^( )*#( )*include( )*\".+\"");
+    if(line == "") return;
+    std::regex preprocessor("^( )*#( )*include( )*<.+>|^( )*#( )*include( )*\".+\"");
     std::smatch match_preprocessor;
     if(line.find("//") != std::string::npos) { //contains comment
         int comment_idx = line.find("//");
@@ -28,12 +31,18 @@ void myprintw(std::string line) {
         printw(line.substr(comment_idx, static_cast<int>(line.size()) - comment_idx));
         attroff(COLOR_PAIR(3));
     } else if(std::regex_search(line, match_preprocessor, preprocessor)) {
+        std::regex include_part("^( )*#( )*include");
+        std::smatch include_part_match;
+        std::regex_search(line, include_part_match, include_part);
+        attron(COLOR_PAIR(5));
+        printw(include_part_match[0]);
+        attroff(COLOR_PAIR(5));
+        size_t include_start = line.find(include_part_match[0]);
         attron(COLOR_PAIR(4));
-        printw(match_preprocessor[0]);
+        printw(line.substr(include_start + include_part_match[0].length(), match_preprocessor[0].length() - (include_start + include_part_match[0].length())));
         attroff(COLOR_PAIR(4));
         size_t match_start = line.find(match_preprocessor[0]);
-        printw(line.substr(0, std::min(match_start + match_preprocessor[0].length(), line.length())));
-        //myprintw(line.substr(0, index_after));
+        myprintw(line.substr(match_start + match_preprocessor[0].length(), line.length() - (match_start + match_preprocessor[0].length())));
     } else {
         printw(line);
     }
