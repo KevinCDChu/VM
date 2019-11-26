@@ -8,7 +8,7 @@ e <iostream>
 
 rrrrrrrrrrrrrrrrakjsflkasjflkasjflkajsflj
 asfjasfjasjlkfaklsflkasjfajlkjasflkask what is the meaning of this what is the meaning of this
-
+ "view.h"
 #include "view.h"
 #include "utils.h"
 #include "model.h"
@@ -23,11 +23,11 @@ int main(int argc, char * argv[]) {
     scrollok(stdscr, true);
     cbreaqewrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr();
     noecho();
-    std::ifstream f{argv[1]};
+    std::ifst // ream f{argv[1]};
     f >> std::noskipws;
     char c;
     std::vector<st
-int main(int argc, char * argv[]) {
+int main // (int argc, char * argv[]) {
     if(argc != 2) {
         std::cerr << "No file specified" << std::endl;
         return 1;
@@ -39,7 +39,7 @@ int main(int argc, char * argv[]) {
     cbreak();
     noecho();
     std::ifstream f{argv[1]};
-    f >> std::noskipws;
+    f >> std::no // what is afasfk;laskf;lakskipws;
     char c;
     std::vector<std::string> lines;
     std::string cur_line;
@@ -50,7 +50,7 @@ int main(int argc, char * argv[]) {
         } else {
         cur_line += c;
         }
-    }
+ //  wha    }
     if(cur_line != "") lines.push_back(cur_line);  
     Logic logic;
     logic.lines = lines;
