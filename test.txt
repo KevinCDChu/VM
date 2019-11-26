@@ -1,12 +1,16 @@
 #include <ncurses.h>
-#include <iostream>
+#includ
+
+e <iostream>
 #include <fstream>
-#include <vector>
-#include <string>
-#include <algorithm>
+#include <vector>hat   >
+#include <string > 
+
+#include <algori
+thm>
 
 
-awjrhjkawhrkawhjrhkajhrjk    // comment
+;awhjrhkajhrjk  //kfjasjfkasjfklajslfjafjasjfkas ///t
 
 rrrrrrrrrrrrrrrrakjsflkasjflkasjflkajsflj a
 
@@ -15,7 +19,7 @@ rrrrrrrrrrrrrrrrakjsflkasjflkasjflkajsflj a
 
 
 
-
+asfjasfjasjlkfaklsflkasjfajlkjasflkasklfalsjflkjl
 
 
 
