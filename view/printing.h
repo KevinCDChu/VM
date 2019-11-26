@@ -32,7 +32,7 @@ void myprintw(std::string line) {
         printw(match_preprocessor[0]);
         attroff(COLOR_PAIR(4));
         size_t match_start = line.find(match_preprocessor[0]);
-        printw(line.substr(0, std::min(match_start + match_preprocessor[0].length(), line.length()));
+        printw(line.substr(0, std::min(match_start + match_preprocessor[0].length(), line.length())));
         //myprintw(line.substr(0, index_after));
     } else {
         printw(line);
