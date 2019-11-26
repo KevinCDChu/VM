@@ -38,9 +38,12 @@ class Window : public View {
 
     void displayView(std::vector<std::string> &lines, const int &cursor_y,const  int &cursor_x, const int &offset, const std::string &cmdstr) override {
         move(0, 0);
-        for(int i = 0; i <= height; ++i) {
+        int offs = 0;
+        for(int i = 0; i <= height - offs; ++i) {
             if(i + offset < static_cast<int>(lines.size())) { 
                 myprintw(lines[i + offset]); // print out line
+                int off = std::max(static_cast<int>(lines[i].size() - 1), 0)/(width - 1);
+                offs += off;
             }
             else {
                 attron(COLOR_PAIR(1));
@@ -78,6 +81,7 @@ class Bar : public View {
         move(height + 1, 0);
         if(cmdstr == "E37: No write since last change (add ! to override)") attron(COLOR_PAIR(2));
         printw(cmdstr);
+        attroff(COLOR_PAIR(2));
 
         if (cmdstr == "" || cmdstr[0] != ':') {
             move (height + 1, width - 4);
@@ -104,7 +108,8 @@ class Bar : public View {
             std::string x = std::to_string(cursor_x + 1);//std::min(cursor_x + 1, std::max(static_cast<int>(lines[cursor_y+offset].size()), 1)));
             std::string loc = y + "," + x;
             printw(loc);
-            move(cursor_y, std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size() - 1), 0)));
+            if(cmdstr != "-- INSERT --") move(cursor_y, std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size() - 1), 0))); // take min as we might have overshoot from previous line
+            else move(cursor_y, std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size()), 0))); // Allowed to be at end of line if insert mode
         }
         else {
             move(cursor_y, std::min(cursor_x, std::max(width - 1, 0)));
@@ -112,7 +117,5 @@ class Bar : public View {
         refresh();
     }
 };
-
-
 
 #endif

@@ -178,6 +178,9 @@ class Logic : public Model {
                 cmdstr = "";
             }
         }
+        else {
+            cmdstr = "";
+        }
     }
 
     void updateViews() {
@@ -222,7 +225,6 @@ class Logic : public Model {
         else if(botinsert_mode) {
             if(ch == 10) { // Pressed enter, do command
                 botCommand(cmdstr);
-                cmdstr = "";
                 botinsert_mode = false;
                 clearbottom(views[0]->getHeight());
                 cursor_y = prevloc.second;
