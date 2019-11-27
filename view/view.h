@@ -16,7 +16,7 @@ class View {
     virtual int getHeight() = 0;
     virtual int getWidth() = 0;
     virtual void updateView() = 0;
-    virtual void displayView(std::vector<std::string> &lines, const int &cursor_y, const int &cursor_x, const int &offset, const std::string &cmdstr) = 0;
+    virtual void displayView(std::vector<std::string> &lines, const int &cursor_y, const int &cursor_x, const int &offset, const std::string &cmdstr, const std::string &cmd) = 0;
 };
 
 
@@ -38,7 +38,7 @@ class Window : public View {
         height -= 2;
     }
 
-    void displayView(std::vector<std::string> &lines, const int &cursor_y,const  int &cursor_x, const int &offset, const std::string &cmdstr) override {
+    void displayView(std::vector<std::string> &lines, const int &cursor_y,const  int &cursor_x, const int &offset, const std::string &cmdstr, const std::string &cmd) override {
         move(0, 0);
         int offs = 0;
         std::vector<int> tmp (height + 2, 0);
@@ -106,7 +106,7 @@ class Bar : public View {
         height -= 2;
     }
 
-    void displayView(std::vector<std::string> &lines, const int &cursor_y, const int &cursor_x, const int &offset, const std::string &cmdstr) override {
+    void displayView(std::vector<std::string> &lines, const int &cursor_y, const int &cursor_x, const int &offset, const std::string &cmdstr, const std::string &cmd) override {
         clearbottom(height);
         move(height + 1, 0);
         if(cmdstr == "E37: No write since last change (add ! to override)") attron(COLOR_PAIR(2));
@@ -132,10 +132,15 @@ class Bar : public View {
                 }
             }
             
+            move (height + 1, width - 28); {
+                printw(cmd);
+            }
 
             move (height + 1, width - 18);
             std::string y = std::to_string(cursor_y + offset + 1);
-            std::string x = std::to_string(std::min(cursor_x + 1, std::max(static_cast<int>(lines[cursor_y+offset].size()), 1)));
+            std::string x = "";
+            if(cmdstr != "-- INSERT --") x = std::to_string(1 + std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y+offset].size()-1), 0)));
+            else x = std::to_string(1 + std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y+offset].size()), 0)));
             std::string loc = y + "," + x;
             printw(loc);
 

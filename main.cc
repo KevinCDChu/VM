@@ -19,6 +19,7 @@ int main(int argc, char * argv[]) {
     keypad(stdscr, true);
     cbreak();
     noecho();
+    ESCDELAY = 0;
     std::ifstream f{argv[1]};
     f >> std::noskipws;
     char c;
