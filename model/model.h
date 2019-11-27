@@ -111,8 +111,15 @@ class Logic : public Model {
             }
         }
         else if(ch == KEY_DC) { // delete key == move cursor foward and backspace
+            if(lines[cur_line].empty()) {
+                if(cursor_y + offset == static_cast<int>(lines.size() - 1)) return; // do nothing if at end of file
+                ++cursor_y;
+                cursor_x = 0;
+                interpret_input(KEY_BACKSPACE);
+            } else {
             ++cursor_x;
             interpret_input(KEY_BACKSPACE);
+            }
         }
         else if(ch == KEY_BACKSPACE) { // Backspace key
             if(cursor_x == 0) {
