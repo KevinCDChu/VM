@@ -143,7 +143,7 @@ class Bar : public View {
     void displayView(std::vector<std::string> &lines, const int &cursor_y, const int &cursor_x, const int &offset, const std::string &cmdstr, const std::string &cmd) override {
         clearbottom(height);
         move(height + 1, 0);
-        if(cmdstr == "E37: No write since last change (add ! to override)") attron(COLOR_PAIR(2));
+        if(cmdstr[0] == 'E') attron(COLOR_PAIR(2));
         printw(cmdstr);
         attroff(COLOR_PAIR(2));
 

@@ -201,6 +201,10 @@ class Logic : public Model {
             prevloc.back().first.first = 0;
             prevloc.back().second = std::max(static_cast<int>(lines.size() - 1), 0);
         }
+        else {
+            botinsert_mode = false;
+            cmdstr = "E492: Not an editor command: " + c;
+        }
     }
 
     void updateViews() {
@@ -356,6 +360,7 @@ class Logic : public Model {
             cntrl->genAction();
             ch = cntrl->getAction()->getchar();
         } 
+
         if(isdigit(ch) && !botinsert_mode && !insert_mode) {
             numcmd += ch;
         }
