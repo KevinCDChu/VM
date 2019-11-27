@@ -26,7 +26,6 @@ class Window : public View {
     public:
     
     std::vector<int> offsetv;
-    std::vector<std::pair<int,int>> comments;
 
 
     Window() { updateView(); }
@@ -45,10 +44,13 @@ class Window : public View {
         int offs = 0;
         std::vector<int> tmp (height + 2, 0);
         offsetv = std::move(tmp);
+        int start_of_window = offset; // for multiline comments
+        get_first_comment(start_of_window, lines);
+        get_first_end_comment(start_of_window, lines);
         for(int i = 0; i <= height - offs; ++i) {
             int cur_line = i + offset;
             if(i + offset < static_cast<int>(lines.size())) { 
-                myprintw(lines[i + offset], comments, cur_line); // print out line
+                myprintw(lines[i + offset], cur_line, lines); // print out line
                 int off = std::max(static_cast<int>(lines[i + offset].size() - 1), 0)/(width - 1);
                 offs += off;
                 offsetv[i + 1] = offs;
