@@ -16,6 +16,7 @@ int main(int argc, char * argv[]) {
     start_color();
     init_colours(true);
     scrollok(stdscr, true);
+    keypad(stdscr, true);
     cbreak();
     noecho();
     std::ifstream f{argv[1]};

@@ -85,7 +85,7 @@ class Logic : public Model {
     void addCharacter(int ch) {
         int cur_line = cursor_y + offset;
         if((cursor_x == static_cast<int>(lines[cur_line].size())) && !lines[cur_line].empty()) { // insert mode at end of string
-            if(ch == 127) { // delete last element
+            if(ch == KEY_BACKSPACE) { // delete last element
                 lines[cur_line]  = lines[cur_line].substr(0, cursor_x - 1);
                 --cursor_x;
                 clearline();
@@ -101,7 +101,7 @@ class Logic : public Model {
                 ++cursor_x;
             }
         }
-        else if(ch == 127) { // Backspace key
+        else if(ch == KEY_BACKSPACE) { // Backspace key
             if(cursor_x == 0) {
                 if(cur_line) { 
                     cursor_x = static_cast<int>(lines[cur_line - 1].size());
@@ -134,11 +134,11 @@ class Logic : public Model {
                 ++cursor_x;
             }
         }
-        if(cur_line || cursor_x || ch != 127) filechange = true;
+        if(cur_line || cursor_x || ch != KEY_BACKSPACE) filechange = true;
     }
 
     void addBotCharacter(int ch) {
-        if (ch == 127) {
+        if (ch == KEY_BACKSPACE) {
             cmdstr = cmdstr.substr(0, cmdstr.size() - 1);
             --cursor_x;
         }
@@ -298,13 +298,13 @@ class Logic : public Model {
             if(cursor_x != static_cast<int>(lines[cursor_y + offset].size())) cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size() - 1), 0)); // Fix cursor_x constant
             if(ch == KEY_DC) { // delete key == move cursor foward and backspace
                 if(cursor_x == static_cast<int>(lines[cursor_y + offset].size())) { // we are at the end of the line
-                    if(cursor_y + offset == static_cast<int>(lines.size())) return; // do nothing if at end of file
+                    if(cursor_y + offset == static_cast<int>(lines.size() - 1)) return; // do nothing if at end of file
                     ++cursor_y;
                     cursor_x = 0;
-                    ch = 127;
+                    ch = KEY_BACKSPACE;
                 } else {
                     ++cursor_x;
-                    ch = 127;
+                    ch = KEY_BACKSPACE;
                 }
             }
             addCharacter(ch);
@@ -315,7 +315,7 @@ class Logic : public Model {
                 botinsert_mode = false;
                 clearbottom(views[0]->getHeight());
                 returncursor();
-            } else if(cmdstr.size() == 1 && ch == 127) { // backspace out of command
+            } else if(cmdstr.size() == 1 && ch == KEY_BACKSPACE) { // backspace out of command
                 cmdstr = "";
                 botinsert_mode = false;
                 clearbottom(views[0]->getHeight());
