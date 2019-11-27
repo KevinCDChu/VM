@@ -15,6 +15,7 @@ class View {
     int width;
     virtual int getHeight() = 0;
     virtual int getWidth() = 0;
+    virtual int tabOffset(int x, int y, std::vector<std::string> &lines, int offset) = 0;
     virtual void updateView() = 0;
     virtual void displayView(std::vector<std::string> &lines, const int &cursor_y, const int &cursor_x, const int &offset, const std::string &cmdstr, const std::string &cmd) = 0;
 };
@@ -63,31 +64,64 @@ class Window : public View {
     }
 
     int adjustx(int x, int y, std::vector<std::string> &lines, int offset) {
-        int minx = x;
+        int taboff = 0;
+        int tabcol = 8;
+        for(int i = 0; i < std::min(static_cast<int>(lines[y+offset].size()), x+1); ++i) {
+            if(lines[y+offset][i] == '\t') {
+                taboff += tabcol-1;
+                tabcol = 9;
+            }
+            if(tabcol != 1) {
+                --tabcol;
+            }
+            else {
+                tabcol = 8;
+            }
+        }
+        int minx = x + taboff;
         int maxy = 0;
         if (x/(width) < offsetv[y + 1] - offsetv[y]) {
             maxy = (offsetv[y + 1] - offsetv[y])*width - 1;
         }
         else {
-            maxy = std::max(static_cast<int>(lines[y + offset].size() - 1), 0);
+            maxy = std::max(static_cast<int>(lines[y + offset].size() - 1 + taboff), 0);
         }
         return std::min(minx, maxy)%(width); 
     }
 
     int adjustxin(int x, int y, std::vector<std::string> &lines, int offset) {
-        int minx = x;
+        int taboff = tabOffset(x, y, lines, offset);
+        int minx = x + taboff;
         int maxy = 0;
         if (x/(width) < offsetv[y + 1] - offsetv[y]) {
             maxy = (offsetv[y + 1] - offsetv[y])*width - 1;
         }
         else {
-            maxy = std::max(static_cast<int>(lines[y + offset].size()), 0);
+            maxy = std::max(static_cast<int>(lines[y + offset].size() + taboff), 0);
         }
         return std::min(minx, maxy)%(width); 
     }
 
     int adjusty(int x, int y, std::vector<std::string> &lines, int offset) {
         return y + offsetv[y] + std::min(x/(width), offsetv[y + 1] - offsetv[y]);
+    }
+
+    int tabOffset(int x, int y, std::vector<std::string> &lines, int offset) override {
+        int taboff = 0;
+        int tabcol = 8;
+        for(int i = 0; i < std::min(static_cast<int>(lines[y+offset].size()), x+1); ++i) {
+            if(lines[y+offset][i] == '\t') {
+                taboff += tabcol-1;
+                tabcol = 9;
+            }
+            if(tabcol != 1) {
+                --tabcol;
+            }
+            else {
+                tabcol = 8;
+            }
+        }
+        return taboff;
     }
 };
 
@@ -141,7 +175,18 @@ class Bar : public View {
             std::string x = "";
             if(cmdstr != "-- INSERT --") x = std::to_string(1 + std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y+offset].size()-1), 0)));
             else x = std::to_string(1 + std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y+offset].size()), 0)));
-            std::string loc = y + "," + x;
+            std::string loc = "";
+            int taboff = tabOffset(cursor_x, cursor_y, lines, offset);
+            std::string xchar = std::to_string(stoi(x) + taboff);
+            if(lines[cursor_y+offset].empty()) {
+                loc = y + ",0-" + x;
+            }
+            else if (taboff != 0) {
+                loc = y + "," + x + "-" + xchar;
+            }
+            else {
+                loc = y + "," + x;
+            }
             printw(loc);
 
             if(cmdstr != "-- INSERT --") move(cursor_y, std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size() - 1), 0)));
@@ -151,6 +196,24 @@ class Bar : public View {
             move(cursor_y, std::min(cursor_x, std::max(width - 1, 0)));
         }
         refresh();
+    }
+
+    int tabOffset(int x, int y, std::vector<std::string> &lines, int offset) override {
+        int taboff = 0;
+        int tabcol = 8;
+        for(int i = 0; i < std::min(static_cast<int>(lines[y+offset].size()), x+1); ++i) {
+            if(lines[y+offset][i] == '\t') {
+                taboff += tabcol-1;
+                tabcol = 9;
+            }
+            if(tabcol != 1) {
+                --tabcol;
+            }
+            else {
+                tabcol = 8;
+            }
+        }
+        return taboff;
     }
 };
 
