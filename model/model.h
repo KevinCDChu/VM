@@ -99,21 +99,19 @@ class Logic : public Model {
                 if(cursor_y == views[0]->getHeight()) ++offset;
                 else ++cursor_y;
                 clear();
+            } else if(ch == KEY_DC) {
+                if(cursor_y + offset == static_cast<int>(lines.size() - 1)) return; // do nothing if at end of file
+                ++cursor_y;
+                cursor_x = 0;
+                interpret_input(KEY_BACKSPACE);  
             } else { // just insert character
                 lines[cur_line] += ch;
                 ++cursor_x;
             }
         }
         else if(ch == KEY_DC) { // delete key == move cursor foward and backspace
-            if(cursor_x == static_cast<int>(lines[cursor_y + offset].size())) { // we are at the end of the line
-                if(cursor_y + offset == static_cast<int>(lines.size() - 1)) return; // do nothing if at end of file
-                ++cursor_y;
-                cursor_x = 0;
-                ch = KEY_BACKSPACE;
-            } else {
-                ++cursor_x;
-                ch = KEY_BACKSPACE;
-            }
+            ++cursor_x;
+            interpret_input(KEY_BACKSPACE);
         }
         else if(ch == KEY_BACKSPACE) { // Backspace key
             if(cursor_x == 0) {
@@ -123,7 +121,7 @@ class Logic : public Model {
                     lines.erase(lines.begin() + cur_line);
                     debug();
                     if(cursor_y > 5 && offset != static_cast<int>(lines.size()) - views[0]->getHeight()) --cursor_y;
-                    else --offset;
+                    else offset = std::max(offset - 1, 0);
                     clear();
                     --backmovecount;
                 }
@@ -352,10 +350,11 @@ class Logic : public Model {
         }
     }
 
-    void interpret_input() {
-        cntrl->genAction();
-        int ch = cntrl->getAction()->getchar();
-
+    void interpret_input(int ch = 0) { // make it possible to do command not from keyboard
+        if(ch == 0) {
+            cntrl->genAction();
+            ch = cntrl->getAction()->getchar();
+        } 
         if(isdigit(ch) && !botinsert_mode && !insert_mode) {
             numcmd += ch;
         }
