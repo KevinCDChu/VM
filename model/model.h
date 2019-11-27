@@ -68,7 +68,7 @@ class Logic : public Model {
 
     void cursor_down() { // move cursor down
             if(views[0]->getHeight() - cursor_y <= 5) {
-                if(cursor_y != views[0]->getHeight() + offset) scrl(1);
+                if(cursor_y != views[0]->getHeight() + offset && offset + views[0]->getHeight() != static_cast<int>(lines.size()) - 1) scrl(1);
                 if(offset + views[0]->getHeight() < static_cast<int>(lines.size()) - 1) offset += 1;
                 if(offset + views[0]->getHeight() == static_cast<int>(lines.size()) - 1) cursor_y = std::min(cursor_y + 1, views[0]->getHeight());
             }
@@ -121,7 +121,8 @@ class Logic : public Model {
                     cursor_x = static_cast<int>(lines[cur_line - 1].size());
                     lines[cur_line - 1] = lines[cur_line - 1].append(lines[cur_line]);
                     lines.erase(lines.begin() + cur_line);
-                    if(cursor_y > 0) --cursor_y;
+                    debug();
+                    if(cursor_y > 5 && offset != static_cast<int>(lines.size()) - views[0]->getHeight()) --cursor_y;
                     else --offset;
                     clear();
                     --backmovecount;
@@ -310,19 +311,21 @@ class Logic : public Model {
     void debug() {
         std::ofstream myfile;
         myfile.open("out.txt");
-        int start = undostack[undostack.size() - 1].first.first;
-        int end = undostack[undostack.size() - 1].first.second;
-        std::vector<std::string> change = undostack[undostack.size()-1].second;
-        myfile << backmovecount << std::endl;
-        myfile << start << " " << end << std::endl;
-        for (int i = 0; i < static_cast<int>(change.size()) + start; ++i) {
-                if(i < start) {
-                    myfile << lines[i] << std::endl;
-                }
-                else {
-                    myfile << change[i-start] << std::endl;
-                }
-            }
+        // int start = undostack[undostack.size() - 1].first.first;
+        // int end = undostack[undostack.size() - 1].first.second;
+        // std::vector<std::string> change = undostack[undostack.size()-1].second;
+        myfile << offset << std::endl;
+        myfile << static_cast<int>(lines.size()) - 1 << std::endl;
+        myfile << views[0]->getHeight() << std::endl;
+        // myfile << start << " " << end << std::endl;
+        // for (int i = 0; i < static_cast<int>(change.size()) + start; ++i) {
+        //         if(i < start) {
+        //             myfile << lines[i] << std::endl;
+        //         }
+        //         else {
+        //             myfile << change[i-start] << std::endl;
+        //         }
+        //     }
         myfile.close();
     }
 
