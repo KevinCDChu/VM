@@ -28,7 +28,7 @@ class Logic : public Model {
     int offset = 0;
     int cursor_x = 0;
     int cursor_y = 0;
-    std::vector<std::pair<int, int>> prevloc;
+    std::vector<std::pair <std::pair<int, int>, int>> prevloc;
     std::vector<std::pair<std::pair <int, int>, std::vector<std::string>>> undostack; 
     std::vector<std::string> comparable;
     int movecount = 0;
@@ -203,15 +203,23 @@ class Logic : public Model {
     }
 
     void savecursor() {
-        std::pair <int, int> cursave;
-        cursave.first = cursor_x;
-        cursave.second = cursor_y;
+        std::pair <std::pair<int, int>, int> cursave;
+        cursave.first.first = cursor_x;
+        cursave.first.second = cursor_y;
+        cursave.second = cursor_y + offset;
         prevloc.push_back(cursave);
     }
 
     void returncursor() {
-        cursor_y = prevloc.back().second;
-        cursor_x = prevloc.back().first;
+        cursor_y = prevloc.back().first.second;
+        cursor_x = prevloc.back().first.first;
+        int line = prevloc.back().second;
+        while (cursor_y + offset < line) {
+            cursor_down();
+        }
+        while (cursor_y + offset > line) {
+            cursor_up();
+        }
         prevloc.pop_back();
     }
 
@@ -243,13 +251,12 @@ class Logic : public Model {
         int start = undostack[undostack.size()-1].first.first;
         int end = undostack[undostack.size()-1].first.second;
         std::vector<std::string> change = undostack[undostack.size()-1].second;
-        undostack.pop_back();
         if (start == end) {
             lines[start] = change[0];
         }
         else {
             std::vector<std::string> tmp;
-            for (int i = 0; i < static_cast<int>(change.size()); ++i) {
+            for (int i = 0; i < static_cast<int>(change.size()) + start; ++i) {
                 if(i < start) {
                     tmp.push_back(lines[i]);
                 }
@@ -259,6 +266,7 @@ class Logic : public Model {
             }
             lines = tmp;
         }
+        undostack.pop_back();
     }
 
     void debug() {
@@ -266,13 +274,17 @@ class Logic : public Model {
         myfile.open("out.txt");
         int start = undostack[undostack.size() - 1].first.first;
         int end = undostack[undostack.size() - 1].first.second;
+        std::vector<std::string> change = undostack[undostack.size()-1].second;
         myfile << movecount << std::endl;
         myfile << start << " " << end << std::endl;
-        if (start + end >= 0) {
-            for(int i = start; i <= end; ++i) {
-                myfile << undostack[undostack.size() - 1].second[i - start] << std::endl;
+        for (int i = 0; i < static_cast<int>(change.size()) + start; ++i) {
+                if(i < start) {
+                    myfile << lines[i] << std::endl;
+                }
+                else {
+                    myfile << change[i-start] << std::endl;
+                }
             }
-        }
         myfile.close();
     }
 
@@ -291,7 +303,6 @@ class Logic : public Model {
                 cursor_x = std::max(cursor_x - 1, 0);
                 insert_mode = false;
                 comparesaves();
-                debug();
             }
         }
         else if(insert_mode) {
@@ -352,11 +363,13 @@ class Logic : public Model {
         else if(ch == 'a') {
             if(cursor_x < static_cast<int>(lines[cursor_y + offset].size())) ++cursor_x;
             goinsert();
+            savecursor();
         }
         else if(ch == 'A') {
             // store undo command ALSO NOTE MAYBE WE SHOULD HAVE A "PUT INTO INSERT MODE" COMMAND AS WE WILL NEED IT FOR A FEW DIFFERENT COMMANDS
             cursor_x = lines[cursor_y + offset].size();
             goinsert();
+            savecursor();
         }
     }
 };
