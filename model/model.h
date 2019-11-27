@@ -25,8 +25,9 @@ class Logic : public Model {
     std::string filename;
     std::vector<std::string> lines;
     std::string cmdstr = "";
-    std::string cmd = "";
+    std::string numcmd = "";
     std::string savedchange = "";
+    std::vector<std::string> buffer;
     int repeats = 0;
     int offset = 0;
     int cursor_x = 0;
@@ -161,6 +162,7 @@ class Logic : public Model {
     }
 
     void botCommand(std::string cmd) {
+        std::string c = cmd.substr(1, cmd.size() - 1);
         if(cmd == ":wq") {
             botinsert_mode = false;
             complete = true;
@@ -187,8 +189,17 @@ class Logic : public Model {
                 cmdstr = "";
             }
         }
-        else {
+        else if(isnum(c) && cmd[0] == ':') {
+            botinsert_mode = false;
             cmdstr = "";
+            prevloc.back().first.first = 0;
+            prevloc.back().second = std::min(stoi(c), std::max(static_cast<int>(lines.size() - 1), 0));
+        }
+        else if(cmd == ":$"){
+            botinsert_mode = false;
+            cmdstr = "";
+            prevloc.back().first.first = 0;
+            prevloc.back().second = std::max(static_cast<int>(lines.size() - 1), 0);
         }
     }
 
@@ -198,11 +209,11 @@ class Logic : public Model {
     void displayViews() {
         updateViews();
         if (botinsert_mode) {
-            for(auto &i : views) i->displayView(lines, cursor_y, cursor_x, offset, cmdstr, cmd);
+            for(auto &i : views) i->displayView(lines, cursor_y, cursor_x, offset, cmdstr, numcmd);
         }
         else {
             for(int i = views.size() - 1; i >= 0; --i) {
-                views[i]->displayView(lines, cursor_y, cursor_x, offset, cmdstr, cmd);
+                views[i]->displayView(lines, cursor_y, cursor_x, offset, cmdstr, numcmd);
             }
         }
     }
@@ -262,6 +273,12 @@ class Logic : public Model {
             if(comparable[i] != lines[i]) {
                 save.first.second = i;
             }
+            save.second.push_back(comparable[i]);
+            ++i;
+        }
+        // if comparable is longer
+        while (i < static_cast<int>(comparable.size())) {
+            save.first.second = i;
             save.second.push_back(comparable[i]);
             ++i;
         }
@@ -337,13 +354,13 @@ class Logic : public Model {
         int ch = cntrl->getAction()->getchar();
 
         if(isdigit(ch) && !botinsert_mode && !insert_mode) {
-            cmd += ch;
+            numcmd += ch;
         }
         else {
-            if(cmd != "") {
-                repeats = stoi(cmd);
+            if(numcmd != "") {
+                repeats = stoi(numcmd);
             }
-            cmd = "";
+            numcmd = "";
         }
 
         if(ch == 27) { // escape key
@@ -369,7 +386,6 @@ class Logic : public Model {
         else if(botinsert_mode) {
             if(ch == 10) { // Pressed enter, do command
                 botCommand(cmdstr);
-                botinsert_mode = false;
                 clearbottom(views[0]->getHeight());
                 returncursor();
             } else if(cmdstr.size() == 1 && ch == KEY_BACKSPACE) { // backspace out of command

@@ -16,5 +16,12 @@ void clearline() {
     clrtoeol();
 }
 
+bool isnum(const std::string& s)
+{
+    for(int i = 0; i < static_cast<int>(s.size()); ++i) {
+        if (!isdigit(s[i])) return false;
+    }
+    return true;
+}
 
 #endif
