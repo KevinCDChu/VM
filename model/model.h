@@ -28,7 +28,10 @@ class Logic : public Model {
     int offset = 0;
     int cursor_x = 0;
     int cursor_y = 0;
-    std::pair<int, int> prevloc;
+    std::vector<std::pair<int, int>> prevloc;
+    std::vector<std::pair<std::pair <int, int>, std::vector<std::string>>> undostack; 
+    std::vector<std::string> comparable;
+    int movecount = 0;
 
     void addView(View *v) override {
         views.push_back(v);
@@ -92,6 +95,7 @@ class Logic : public Model {
                 if(cursor_y == views[0]->getHeight()) ++offset;
                 else ++cursor_y;
                 clear();
+                ++movecount;
             } else { // just insert character
                 lines[cur_line] += ch;
                 ++cursor_x;
@@ -106,6 +110,7 @@ class Logic : public Model {
                     if(cursor_y > 0) --cursor_y;
                     else --offset;
                     clear();
+                    --movecount;
                 }
             } else {
                 lines[cur_line]  = lines[cur_line].substr(0, cursor_x - 1) + lines[cur_line].substr(cursor_x, static_cast<int>(lines[cur_line].size() - cursor_x));
@@ -119,6 +124,7 @@ class Logic : public Model {
             if(cursor_y == views[0]->getHeight()) ++offset;
             else ++cursor_y;
             clear();
+            ++movecount;
         } else { 
             if(lines[cur_line].size() == 0) {
                 lines[cur_line] += ch;
@@ -188,6 +194,88 @@ class Logic : public Model {
             }
         }
     }
+
+    void goinsert() {
+        insert_mode = true;
+        cmdstr = "-- INSERT --";
+        comparable = lines;
+        movecount = 0;
+    }
+
+    void savecursor() {
+        std::pair <int, int> cursave;
+        cursave.first = cursor_x;
+        cursave.second = cursor_y;
+        prevloc.push_back(cursave);
+    }
+
+    void returncursor() {
+        cursor_y = prevloc.back().second;
+        cursor_x = prevloc.back().first;
+        prevloc.pop_back();
+    }
+
+    void comparesaves() {
+        int mxs = std::min(static_cast<int>(comparable.size()), static_cast<int>(lines.size()));
+        std::pair<std::pair<int, int>, std::vector<std::string>> save;
+        int i = 0;
+        while (comparable[i] == lines[i]) {
+            if (i == mxs - 1 && movecount == 0) {
+                save.first.first = -1;
+                save.first.second = -1;
+                undostack.push_back(save);
+                return;
+            }
+            ++i;
+        }
+        save.first.first = i;
+        while (i < mxs) {
+            if(comparable[i] != lines[i]) {
+                save.first.second = i;
+            }
+            save.second.push_back(comparable[i]);
+            ++i;
+        }
+        undostack.push_back(save);
+    }
+
+    void undo() {
+        int start = undostack[undostack.size()-1].first.first;
+        int end = undostack[undostack.size()-1].first.second;
+        std::vector<std::string> change = undostack[undostack.size()-1].second;
+        undostack.pop_back();
+        if (start == end) {
+            lines[start] = change[0];
+        }
+        else {
+            std::vector<std::string> tmp;
+            for (int i = 0; i < static_cast<int>(change.size()); ++i) {
+                if(i < start) {
+                    tmp.push_back(lines[i]);
+                }
+                else {
+                    tmp.push_back(change[i-start]);
+                }
+            }
+            lines = tmp;
+        }
+    }
+
+    void debug() {
+        std::ofstream myfile;
+        myfile.open("out.txt");
+        int start = undostack[undostack.size() - 1].first.first;
+        int end = undostack[undostack.size() - 1].first.second;
+        myfile << movecount << std::endl;
+        myfile << start << " " << end << std::endl;
+        if (start + end >= 0) {
+            for(int i = start; i <= end; ++i) {
+                myfile << undostack[undostack.size() - 1].second[i - start] << std::endl;
+            }
+        }
+        myfile.close();
+    }
+
     void interpret_input() {
         cntrl->genAction();
         int ch = cntrl->getAction()->getchar();
@@ -196,13 +284,14 @@ class Logic : public Model {
             if (botinsert_mode) {
                 botinsert_mode = false;
                 clearbottom(views[0]->getHeight());
-                cursor_y = prevloc.second;
-                cursor_x = prevloc.first;
+                returncursor();
             }
             if(insert_mode) {
                 if(cursor_x != static_cast<int>(lines[cursor_y + offset].size())) cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size()) - 1, 0));
                 cursor_x = std::max(cursor_x - 1, 0);
                 insert_mode = false;
+                comparesaves();
+                debug();
             }
         }
         else if(insert_mode) {
@@ -225,27 +314,24 @@ class Logic : public Model {
                 botCommand(cmdstr);
                 botinsert_mode = false;
                 clearbottom(views[0]->getHeight());
-                cursor_y = prevloc.second;
-                cursor_x = prevloc.first;
+                returncursor();
             } else if(cmdstr.size() == 1 && ch == 127) { // backspace out of command
                 cmdstr = "";
                 botinsert_mode = false;
                 clearbottom(views[0]->getHeight());
-                cursor_y = prevloc.second;
-                cursor_x = prevloc.first;
+                returncursor();
             } else {
                 addBotCharacter(ch);
             }
         }
         else if(ch == 'i') {
-            insert_mode = true;
-            cmdstr = "-- INSERT --";
+            goinsert();
+            savecursor();
             cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size()) - 1, 0));
         }
         else if(ch == ':') {
             cmdstr = ":";
-            prevloc.first = cursor_x;
-            prevloc.second = cursor_y;
+            savecursor();
             cursor_y = views[0]->getHeight() + 1;
             cursor_x = 1;
             botinsert_mode = true;
@@ -254,16 +340,23 @@ class Logic : public Model {
         else if(ch == 'j') cursor_down();
         else if(ch == 'k') cursor_up();
         else if(ch == 'l') cursor_right();
+        else if(ch == 'u') {
+            if (!undostack.empty()) {
+                undo();
+                returncursor();
+            }
+            else {
+                cmdstr = "Already at oldest change";
+            }
+        }
         else if(ch == 'a') {
             if(cursor_x < static_cast<int>(lines[cursor_y + offset].size())) ++cursor_x;
-            insert_mode = true;
-            cmdstr = "-- INSERT --";
+            goinsert();
         }
         else if(ch == 'A') {
             // store undo command ALSO NOTE MAYBE WE SHOULD HAVE A "PUT INTO INSERT MODE" COMMAND AS WE WILL NEED IT FOR A FEW DIFFERENT COMMANDS
             cursor_x = lines[cursor_y + offset].size();
-            insert_mode = true;
-            cmdstr = "-- INSERT --";
+            goinsert();
         }
     }
 };
