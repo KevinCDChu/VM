@@ -1,12 +1,4 @@
-
-
-
-/*
-
-hello
-*/
-
-l#d
+#d
 e <iostream>
 #include <fstream>
 #include <vector>
