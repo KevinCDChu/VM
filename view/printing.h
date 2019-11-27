@@ -4,7 +4,6 @@
 #include <string>
 #include <regex>
 
-
 void init_colours(bool code_file) {
     init_pair(1, COLOR_BLUE, COLOR_BLACK);
     init_pair(2, COLOR_WHITE, COLOR_RED);
@@ -13,11 +12,15 @@ void init_colours(bool code_file) {
         init_pair(4, COLOR_CYAN, COLOR_BLACK);
         init_pair(5, COLOR_YELLOW, COLOR_BLACK);
         init_pair(6, COLOR_MAGENTA, COLOR_BLACK);
+        init_pair(7, COLOR_BLUE, COLOR_BLACK);
+        init_pair(8, COLOR_RED, COLOR_BLACK);
     } else {
         init_pair(3, COLOR_WHITE, COLOR_BLACK);
         init_pair(4, COLOR_WHITE, COLOR_BLACK);
         init_pair(5, COLOR_WHITE, COLOR_BLACK);
         init_pair(6, COLOR_WHITE, COLOR_BLACK);
+        init_pair(7, COLOR_WHITE, COLOR_BLACK);
+        init_pair(8, COLOR_WHITE, COLOR_BLACK);
     }
 }
 
@@ -31,14 +34,14 @@ void myprintw(std::string &line);
 
 void strip_unnecessary_characters(std::string &first_string, std::string &middle, std::string &end_string, std::string &str, std::smatch &match) {
     int length = middle.length();
-    if(middle[middle.length() - 1] == ')' || middle[middle.length() - 1] == ',' || middle[middle.length() - 1] == '(' || middle[middle.length() - 1] == '>') {
+    if(middle[middle.length() - 1] == ')' || middle[middle.length() - 1] == ',' || middle[middle.length() - 1] == '(' || middle[middle.length() - 1] == '>' || middle[middle.length() - 1] == '}') {
         end_string = middle[middle.length() - 1];
         middle = middle.substr(0, length - 1);
     }
     size_t start_idx = match.position(0);
     end_string += str.substr(start_idx + length, str.length() - (start_idx + length));
     first_string = str.substr(0, start_idx);
-    if(middle[0] == '(' || middle[0] == ',' || middle[0] == ';' || middle[0] == '<') {
+    if(middle[0] == '(' || middle[0] == ',' || middle[0] == ';' || middle[0] == '<' || middle[0] == '{') {
         first_string += middle[0];
         middle = middle.substr(1, middle.length() - 1);
     }
@@ -49,7 +52,6 @@ void strip_unnecessary_characters(std::string &first_string, std::string &middle
 void myprintw_helper(std::string &line, int checker);
 
 void myprintw_only_colour_match(std::string &str, std::regex &re, int colour, int checker, std::smatch &match) { // function assume that match exists!!! 
-    std::regex_search(str, match, re);
     std::string first_string;
     std::string middle = match[0];
     std::string end_string;
@@ -81,9 +83,9 @@ std::regex init_keywords() {
     std::string str;
     str += "return|";
     str += ";?if( )*\\(?|";
-    str += ";?for( )*\\(?|";
-    str += ";?while( )*\\(?|";
-    str += "}?else*\\(?|";
+    str += "[^a-zA-Z0-9]for( )*\\(?|^for( )*\\(?|";
+    str += "[^a-zA-Z0-9]while( )*\\(?|^while( )*\\(?|";
+    str += "[^a-zA-Z0-9]else( )*\\(?|^else( )*\\(?|";
     str += " new|";
     str += ":?public|";
     str += ":?protected|";
@@ -104,8 +106,8 @@ std::regex init_numbers() {
 
 std::regex init_string() {
     std::string str;
-    str += "\\\".*\\\"|";
-    str += "'.*'";
+    str += "([\"'])(?:\\\\1|.)*?\\1";
+    //str += "\'[^\"]+\'";
     std::regex re(str);
     return re;
 }
@@ -141,17 +143,17 @@ void myprintw_helper(std::string &line, int checker) {
         attron(COLOR_PAIR(3));
         printw(line.substr(comment_idx, static_cast<int>(line.size()) - comment_idx));
         attroff(COLOR_PAIR(3));
-    } else if(std::regex_search(line, match_preprocessor, preprocessor)) { // preprocessor directive
+    } else if(std::regex_search(line, match_preprocessor, preprocessor) && checker >= 7) { // preprocessor directive
         std::regex include_part("^( )*#( )*include|#( )*define( )+([^ ])+|#( )*endif|#( )*ifndef( )+([^ ])+");
         std::smatch include_part_match;
         std::regex_search(line, include_part_match, include_part);
-        attron(COLOR_PAIR(5));
+        attron(COLOR_PAIR(8));
         printw(include_part_match[0]);
-        attroff(COLOR_PAIR(5));
+        attroff(COLOR_PAIR(8));
         size_t include_start = include_part_match.position(0);
-        attron(COLOR_PAIR(4));
+        attron(COLOR_PAIR(7));
         printw(line.substr(include_start + include_part_match[0].length(), match_preprocessor[0].length() - (include_start + include_part_match[0].length())));
-        attroff(COLOR_PAIR(4));
+        attroff(COLOR_PAIR(7));
         size_t match_start = match_preprocessor.position(0);
         std::string rest = line.substr(match_start + match_preprocessor[0].length(), line.length() - (match_start + match_preprocessor[0].length()));
         myprintw_helper(rest, checker);
