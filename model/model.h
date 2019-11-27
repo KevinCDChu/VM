@@ -103,7 +103,8 @@ class Logic : public Model {
                 if(cursor_y + offset == static_cast<int>(lines.size() - 1)) return; // do nothing if at end of file
                 ++cursor_y;
                 cursor_x = 0;
-                interpret_input(KEY_BACKSPACE);  
+                interpret_input(KEY_BACKSPACE);
+                return;
             } else { // just insert character
                 lines[cur_line] += ch;
                 ++cursor_x;
@@ -120,8 +121,8 @@ class Logic : public Model {
                     lines[cur_line - 1] = lines[cur_line - 1].append(lines[cur_line]);
                     lines.erase(lines.begin() + cur_line);
                     debug();
-                    if(cursor_y > 5 && offset != static_cast<int>(lines.size()) - views[0]->getHeight()) --cursor_y;
-                    else offset = std::max(offset - 1, 0);
+                    if((cursor_y > 5 && offset != static_cast<int>(lines.size()) - views[0]->getHeight()) || offset == 0) --cursor_y;
+                    else --offset;
                     clear();
                     --backmovecount;
                 }
