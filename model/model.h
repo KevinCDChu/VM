@@ -716,14 +716,20 @@ class Logic : public Model {
             buffer.push_back("");
             savecursor();
             int cur_line = cursor_y + offset;
+            int k = std::min(cursor_x, static_cast<int>(lines[cur_line].size()) - 1);
+            int j = std::min(cursor_x, static_cast<int>(lines[cur_line].size()) - 1);
             if(lines[cur_line] != "") {
-                buffer[0] += lines[cur_line][cursor_x];
-                lines[cur_line] = lines[cur_line].substr(0, cursor_x) + lines[cur_line].substr(cursor_x + 1, lines[cur_line].length() - cursor_x - 1);
+                buffer[0] += lines[cur_line][j];
+                if(j != static_cast<int>(lines[cur_line].size()) - 1) lines[cur_line] = lines[cur_line].substr(0, j) + lines[cur_line].substr(j + 1, lines[cur_line].length() - j - 1);
+                else lines[cur_line] = lines[cur_line].substr(0, j);
             }
             for(int i = 1; i < repeats; ++i) {
                 if(lines[cur_line] != "") {
-                buffer[0] += lines[cur_line][cursor_x];
-                lines[cur_line] = lines[cur_line].substr(0, cursor_x) + lines[cur_line].substr(cursor_x + 1, lines[cur_line].length() - cursor_x - 1);
+                j = std::min(cursor_x, static_cast<int>(lines[cur_line].size()) - 1);   
+                if(j < k) break;
+                buffer[0] += lines[cur_line][j];
+                if(j != static_cast<int>(lines[cur_line].size()) - 1) lines[cur_line] = lines[cur_line].substr(0, j) + lines[cur_line].substr(j + 1, lines[cur_line].length() - j - 1);
+                else lines[cur_line] = lines[cur_line].substr(0, j);
                 }
             }
             comparesaves();

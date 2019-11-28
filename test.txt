@@ -19,7 +19,7 @@ e <iostream>
 ;awhjrhkajhrjk  //kfjasjfkasjfklajslfjafjasjfkas ///t
 
 rrrrrrrrrrrrrrrrakjsflkasjflkasjflkajsflj
-asfjasfjasjlkfaklsflkasjfajlkjasflkask what is the meaning of this what is the meaning of this/*
+
  "view.h"
 #include "view.h"
 #include "utils.h"
@@ -30,7 +30,7 @@ int main(int argc, char * argv[]) {
         return 1;
     }
     initscr();
-    start_color();
+ asfjasfjasjlkfaklsflkasjfajlkjasflkask what is the meaning of this what is the meaning of this/*   start_color();
     init_pair(1, COLOR_BLUE, COLOR_BLACK);
     scrollok(stdscr, true);
     cbreaqewrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr();*/
@@ -48,7 +48,7 @@ int main // (int argc, char * argv[]) {
     start_color();
     init_pair(1, COLOR_BLUE, COLOR_BLACK);*/
     scrollok(stdscr, true);
-    cbreak();
+    cbreak();/*
     noecho();
     std::ifstream f{argv[1]};
     f >> std::no // what is afasfk;laskf;lakskipws;
@@ -80,5 +80,5 @@ int main // (int argc, char * argv[]) {
         logic.interpret_input(ch);
         logic.displayViews();
     }
-    endwin();
+    endwin(); */
 }
