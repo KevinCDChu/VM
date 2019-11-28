@@ -260,7 +260,7 @@ class Logic : public Model {
     void comparesaves() {
         int mxs = std::min(static_cast<int>(comparable.size()), static_cast<int>(lines.size()));
         std::pair<std::pair<int, int>, std::vector<std::string>> save;
-        int linestart = prevloc.back().second + backmovecount; 
+        int linestart = std::max(prevloc.back().second + backmovecount, 0);
         int i = linestart;
         if(comparable.size() == lines.size()) {
             while(comparable[i] == lines[i]) {

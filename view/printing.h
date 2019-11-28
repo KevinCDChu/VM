@@ -16,6 +16,7 @@ void init_colours(bool code_file) {
         init_pair(7, COLOR_BLUE, COLOR_BLACK);
         init_pair(8, COLOR_RED, COLOR_BLACK);
         init_pair(9, COLOR_GREEN, COLOR_BLACK); // need a seperate comment colour for multiline as comment will end it
+        init_pair(10, COLOR_WHITE, COLOR_RED);
     } else {
         init_pair(3, COLOR_WHITE, COLOR_BLACK);
         init_pair(4, COLOR_WHITE, COLOR_BLACK);
@@ -24,6 +25,8 @@ void init_colours(bool code_file) {
         init_pair(7, COLOR_WHITE, COLOR_BLACK);
         init_pair(8, COLOR_WHITE, COLOR_BLACK);
         init_pair(9, COLOR_WHITE, COLOR_BLACK);
+        init_pair(10, COLOR_WHITE, COLOR_BLACK);
+
     }
 }
 
@@ -184,6 +187,50 @@ void get_first_comment(int &cur_line, std::vector<std::string> &lines) {
     start_comment = -1; 
 }
 
+
+int parentheses = 0;
+int braces = 0;
+int brackets = 0;
+
+void print_mismatched(std::string &line) {
+    for(int j = 0; j < static_cast<int>(line.size()); ++j) {
+            if(line[j] == '(') {++parentheses; printw(line[j]);}
+            else if(line[j] == '{') {++braces; printw(line[j]);}
+            else if(line[j] == '[') {++brackets; printw(line[j]);}
+            else if(line[j] == ')') {
+                if(parentheses == 0) {
+                    attron(COLOR_PAIR(10));
+                    printw(line[j]);
+                    attroff(COLOR_PAIR(10));
+                }
+                else {--parentheses; printw(line[j]);}
+            }
+            else if(line[j] == '}') {
+                if(braces == 0) {
+                    attron(COLOR_PAIR(10));
+                    printw(line[j]);
+                    attroff(COLOR_PAIR(10));
+                }
+                else {--braces; printw(line[j]);}
+
+            }
+            else if(line[j] == ']') {
+                if(brackets == 0) {
+                    attron(COLOR_PAIR(10));
+                    printw(line[j]);
+                    attroff(COLOR_PAIR(10));
+                }
+                else {--brackets; printw(line[j]);}
+            }
+            else {
+                printw(line[j]);
+            }
+
+        }
+}
+
+
+
 void myprintw_helper(std::string &line, int checker, int &cur_line, std::vector<std::string> &lines) {
     if(line == "") return;
     std::smatch match;
@@ -236,7 +283,7 @@ void myprintw_helper(std::string &line, int checker, int &cur_line, std::vector<
     else if(contains_match(line, keywords, match) && checker >= 4) {myprintw_only_colour_match(line, keywords, 5, checker, match, cur_line, lines); return;}
     else if(contains_match(line, numbers, match) && checker >= 3) {myprintw_only_colour_match(line, numbers, 4, checker, match, cur_line, lines); return;}
     else {
-        printw(line);
+        print_mismatched(line);
     } 
 }
 
