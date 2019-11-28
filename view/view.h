@@ -47,6 +47,9 @@ class Window : public View {
         int start_of_window = offset; // for multiline comments
         get_first_comment(start_of_window, lines);
         get_first_end_comment(start_of_window, lines);
+        parentheses = 0;
+        braces = 0;
+        brackets = 0;
         for(int i = 0; i <= height - offs; ++i) {
             int cur_line = i + offset;
             if(i + offset < static_cast<int>(lines.size())) { 

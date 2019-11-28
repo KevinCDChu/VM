@@ -7,6 +7,12 @@ void printw(std::string str) {
     printw(str.c_str());
 }
 
+void printw(char c) {
+    std::string str;
+    str += c;
+    printw(str);
+}
+
 void clearbottom(int height) {
     move(height + 1, 0);
     clrtoeol();
@@ -23,5 +29,9 @@ bool isnum(const std::string& s)
     }
     return true;
 }
+
+
+
+
 
 #endif
