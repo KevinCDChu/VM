@@ -198,24 +198,27 @@ class Logic : public Model {
             cmdstr = "";
             std::string file = cmd.substr(2, cmd.size() - 2);
             if(read_in_current_file) file = " " + filename;
-            read_into_file_buffer(file);
-            std::vector<std::string> temp_buffer = buffer;
-            buffer = entire_file_buffer;
-            comparable = lines;
-            cursor_y = prevloc.back().first.second;
-            cursor_x = prevloc.back().first.first;
-            offset = prevloc.back().second - cursor_y;
-            savecursor();
-            for(int i = 0; i < static_cast<int>(entire_file_buffer.size()); ++i) {
-                lines.insert(lines.begin() + cursor_y + offset + i + 1, entire_file_buffer[i]);
-            }
-            comparesaves();
-            prevloc.back().first.second = cursor_y + 1;
-            prevloc.back().first.first = 0;
-            prevloc.back().second = offset + cursor_y + 1;
-            buffer = temp_buffer;
+            bool worked = true;
+            read_into_file_buffer(file, worked);
+            if(worked) {
+                std::vector<std::string> temp_buffer = buffer;
+                buffer = entire_file_buffer;
+                comparable = lines;
+                cursor_y = prevloc.back().first.second;
+                cursor_x = prevloc.back().first.first;
+                offset = prevloc.back().second - cursor_y;
+                savecursor();
+                for(int i = 0; i < static_cast<int>(entire_file_buffer.size()); ++i) {
+                    lines.insert(lines.begin() + cursor_y + offset + i + 1, entire_file_buffer[i]);
+                }
+                comparesaves();
+                prevloc.back().first.second = cursor_y + 1;
+                prevloc.back().first.first = 0;
+                prevloc.back().second = offset + cursor_y + 1;
+                buffer = temp_buffer;
+                cmdstr = ""; 
+            }       
             botinsert_mode = false;
-            cmdstr = "";        
         }
         else if(cmd == ":q") {
             botinsert_mode = false;
@@ -245,7 +248,7 @@ class Logic : public Model {
         }
     }
 
-    void read_into_file_buffer(std::string file_name) {
+    void read_into_file_buffer(std::string file_name, bool &worked) {
         if(file_name != "") file_name = file_name = file_name.substr(1, file_name.size());
         if(file_exists(file_name)) {
                 std::ifstream f{file_name};
@@ -264,6 +267,7 @@ class Logic : public Model {
         if(cur_line != "") lines.push_back(cur_line);
         entire_file_buffer = lines; 
         } else {
+            worked = false;
             cmdstr = "E484: Can't open file " + file_name;
         }
     }
