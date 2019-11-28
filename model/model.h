@@ -230,7 +230,7 @@ class Logic : public Model {
                     cursor_x = 0;
                 }
                 else if (curline) {
-                    cursor_x = static_cast<int>(lines[curline - 1].size() - 1);
+                    cursor_x = static_cast<int>(lines[curline - 1].size());
                     wordback();
                 }
             }
@@ -310,14 +310,14 @@ class Logic : public Model {
             }
             else {
                 bool space = false;
-                while(i != end && !isWord(lines[curline][i]) && !isspace(lines[curline][i])) {
+                while(i != end && isPunc(lines[curline][i])) {
                     ++i;
                 }
                 while(i != end && isspace(lines[curline][i])) {
                     ++i;
                     space = true;
                 }
-                if(isPunc(lines[curline][i])) {
+                if(isWord(lines[curline][i])) {
                     space = true;
                 }
                 if(curline != std::max(static_cast<int>(lines.size()) - 1, 0) && i == end && (!space || isspace(lines[curline][i]))) {
@@ -576,6 +576,7 @@ class Logic : public Model {
 
         if(ch == 27) { // escape key
             cmdstr = "";
+            numcmd = "";
             if (botinsert_mode) {
                 botinsert_mode = false;
                 clearbottom(views[0]->getHeight());
