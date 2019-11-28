@@ -169,7 +169,8 @@ class Logic : public Model {
     }
 
     void botCommand(std::string cmd) {
-        std::string c = cmd.substr(1, cmd.size() - 1);
+        std::string c;
+        if(cmd.size() > 1) c = cmd.substr(1, cmd.size() - 1);
         if(cmd == ":wq") {
             botinsert_mode = false;
             complete = true;
@@ -196,11 +197,11 @@ class Logic : public Model {
                 cmdstr = "";
             }
         }
-        else if(isnum(c) && cmd[0] == ':') {
+        else if(c != "" && isnum(c) && cmd[0] == ':') {
             botinsert_mode = false;
             cmdstr = "";
             prevloc.back().first.first = 0;
-            prevloc.back().second = std::min(stoi(c), std::max(static_cast<int>(lines.size() - 1), 0));
+            prevloc.back().second = std::min(std::max(stoi(c) - 1, 0), std::max(static_cast<int>(lines.size() - 1), 0));
         }
         else if(cmd == ":$"){
             botinsert_mode = false;
