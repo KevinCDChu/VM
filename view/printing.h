@@ -36,7 +36,7 @@ bool contains_match(std::string &str, std::regex &re, std::smatch &match) {
 }
 
 
-void myprintw(std::string &line, std::vector<int> &cur_line, std::vector<std::string> &lines);
+void myprintw(std::string &line, std::vector<int> &cur_line, std::vector<std::string> &lines, int &brackets, int &braces, int &parentheses);
 
 void strip_unnecessary_characters(std::string &first_string, std::string &middle, std::string &end_string, std::string &str, std::smatch &match) {
     int length = middle.length();
@@ -55,18 +55,18 @@ void strip_unnecessary_characters(std::string &first_string, std::string &middle
 }
 
 
-void myprintw_helper(std::string &line, int checker, int &cur_line, std::vector<std::string> &lines);
+void myprintw_helper(std::string &line, int checker, int &cur_line, std::vector<std::string> &lines, int &brackets, int &braces, int &parentheses);
 
-void myprintw_only_colour_match(std::string &str, std::regex &re, int colour, int checker, std::smatch &match, int &cur_line, std::vector<std::string> &lines) { // function assume that match exists!!! 
+void myprintw_only_colour_match(std::string &str, std::regex &re, int colour, int checker, std::smatch &match, int &cur_line, std::vector<std::string> &lines, int &brackets, int &braces, int &parentheses) { // function assume that match exists!!! 
     std::string first_string;
     std::string middle = match[0];
     std::string end_string;
     strip_unnecessary_characters(first_string, middle, end_string, str, match); // in case (int or something
-    myprintw_helper(first_string, checker - 1, cur_line, lines);
+    myprintw_helper(first_string, checker - 1, cur_line, lines, brackets, braces, parentheses);
     attron(COLOR_PAIR(colour));
     printw(middle);
     attroff(COLOR_PAIR(colour));
-    myprintw_helper(end_string, checker, cur_line, lines);
+    myprintw_helper(end_string, checker, cur_line, lines, brackets, braces, parentheses);
 }
 
 
@@ -95,6 +95,8 @@ std::regex init_keywords() {
     str += " new|";
     str += "[^a-zA-Z0-9:]public|";
     str += "[^a-zA-Z0-9:]protected|";
+    str += "static_cast|";
+    str += "dynamic_cast|";
     str += "[^a-zA-Z0-9:]private";
 
 
@@ -188,11 +190,7 @@ void get_first_comment(int &cur_line, std::vector<std::string> &lines) {
 }
 
 
-int parentheses = 0;
-int braces = 0;
-int brackets = 0;
-
-void print_mismatched(std::string &line) {
+void print_mismatched(std::string &line, int &brackets, int &braces, int &parentheses) {
     for(int j = 0; j < static_cast<int>(line.size()); ++j) {
             if(line[j] == '(') {++parentheses; printw(line[j]);}
             else if(line[j] == '{') {++braces; printw(line[j]);}
@@ -231,7 +229,7 @@ void print_mismatched(std::string &line) {
 
 
 
-void myprintw_helper(std::string &line, int checker, int &cur_line, std::vector<std::string> &lines) {
+void myprintw_helper(std::string &line, int checker, int &cur_line, std::vector<std::string> &lines,int &brackets, int &braces, int &parentheses) {
     if(line == "") return;
     std::smatch match;
     std::smatch comment_match;
@@ -239,7 +237,7 @@ void myprintw_helper(std::string &line, int checker, int &cur_line, std::vector<
     if(std::regex_search(line, match, multiline_comment_start) && checker >= 10) {
         int comment_idx = match.position(0);
         std::string before = line.substr(0, comment_idx);
-        myprintw_helper(before, checker - 1, cur_line, lines);
+        myprintw_helper(before, checker - 1, cur_line, lines, brackets, braces, parentheses);
         attron(COLOR_PAIR(9));
         printw(line.substr(comment_idx, static_cast<int>(line.size()) - comment_idx));
         attroff(COLOR_PAIR(9));
@@ -251,7 +249,7 @@ void myprintw_helper(std::string &line, int checker, int &cur_line, std::vector<
         printw(before);
         attroff(COLOR_PAIR(9));
         std::string after = line.substr(comment_idx, static_cast<int>(line.size()) - comment_idx);
-        myprintw_helper(after,  checker - 1, cur_line, lines);
+        myprintw_helper(after,  checker - 1, cur_line, lines, brackets, braces, parentheses);
     } else if(in_comment(cur_line)) { // currently in comment
         attron(COLOR_PAIR(9));
         printw(line);
@@ -259,7 +257,7 @@ void myprintw_helper(std::string &line, int checker, int &cur_line, std::vector<
     } else if(std::regex_search(line, comment_match, comment) && checker >= 8) { //contains comment
         int comment_idx = comment_match.position(0);
         std::string before = line.substr(0, comment_idx);
-        myprintw_helper(before, checker - 1, cur_line, lines);
+        myprintw_helper(before, checker - 1, cur_line, lines, brackets, braces, parentheses);
         attron(COLOR_PAIR(3));
         printw(line.substr(comment_idx, static_cast<int>(line.size()) - comment_idx));
         attroff(COLOR_PAIR(3));
@@ -276,20 +274,20 @@ void myprintw_helper(std::string &line, int checker, int &cur_line, std::vector<
         attroff(COLOR_PAIR(7));
         size_t match_start = match_preprocessor.position(0);
         std::string rest = line.substr(match_start + match_preprocessor[0].length(), line.length() - (match_start + match_preprocessor[0].length()));
-        myprintw_helper(rest, checker, cur_line, lines);
+        myprintw_helper(rest, checker, cur_line, lines, brackets, braces, parentheses);
     } 
-    else if(contains_match(line, string, match) && checker >= 6) {myprintw_only_colour_match(line, string, 3, checker, match, cur_line, lines); return;}
-    else if(contains_match(line, data_types, match) && checker >= 5) {myprintw_only_colour_match(line, data_types, 6, checker, match, cur_line, lines); return;}
-    else if(contains_match(line, keywords, match) && checker >= 4) {myprintw_only_colour_match(line, keywords, 5, checker, match, cur_line, lines); return;}
-    else if(contains_match(line, numbers, match) && checker >= 3) {myprintw_only_colour_match(line, numbers, 4, checker, match, cur_line, lines); return;}
+    else if(contains_match(line, string, match) && checker >= 6) {myprintw_only_colour_match(line, string, 3, checker, match, cur_line, lines, brackets, braces, parentheses); return;}
+    else if(contains_match(line, data_types, match) && checker >= 5) {myprintw_only_colour_match(line, data_types, 6, checker, match, cur_line, lines, brackets, braces, parentheses); return;}
+    else if(contains_match(line, keywords, match) && checker >= 4) {myprintw_only_colour_match(line, keywords, 5, checker, match, cur_line, lines, brackets, braces, parentheses); return;}
+    else if(contains_match(line, numbers, match) && checker >= 3) {myprintw_only_colour_match(line, numbers, 4, checker, match, cur_line, lines, brackets, braces, parentheses); return;}
     else {
-        print_mismatched(line);
+        print_mismatched(line, brackets, braces, parentheses);
     } 
 }
 
 
-void myprintw(std::string &line, int &cur_line, std::vector<std::string> &lines) {
-    myprintw_helper(line, 10, cur_line, lines);
+void myprintw(std::string &line, int &cur_line, std::vector<std::string> &lines, int &brackets, int &braces, int &parentheses) {
+    myprintw_helper(line, 10, cur_line, lines, brackets, braces, parentheses);
 }
 
 

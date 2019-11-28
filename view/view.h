@@ -47,13 +47,14 @@ class Window : public View {
         int start_of_window = offset; // for multiline comments
         get_first_comment(start_of_window, lines);
         get_first_end_comment(start_of_window, lines);
-        parentheses = 0;
-        braces = 0;
-        brackets = 0;
+        int parentheses = 0;
+        int braces = 0;
+        int brackets = 0;
+        count_parentheses(lines, start_of_window, brackets, braces, parentheses);
         for(int i = 0; i <= height - offs; ++i) {
             int cur_line = i + offset;
             if(i + offset < static_cast<int>(lines.size())) { 
-                myprintw(lines[i + offset], cur_line, lines); // print out line
+                myprintw(lines[i + offset], cur_line, lines, brackets, braces, parentheses); // print out line
                 int off = std::max(static_cast<int>(lines[i + offset].size() - 1), 0)/(width - 1);
                 offs += off;
                 offsetv[i + 1] = offs;
@@ -71,10 +72,11 @@ class Window : public View {
     }
 
     int adjustx(int x, int y, std::vector<std::string> &lines, int offset) {
+        int y_plus_offset = std::min(y + offset, static_cast<int>(lines.size() - 1)); // needed as this might cause segfault
         int taboff = 0;
         int tabcol = 8;
         for(int i = 0; i < std::min(static_cast<int>(lines[y+offset].size()), x+1); ++i) {
-            if(lines[y+offset][i] == '\t') {
+            if(lines[y_plus_offset][i] == '\t') {
                 taboff += tabcol-1;
                 tabcol = 9;
             }
