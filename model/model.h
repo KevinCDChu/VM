@@ -498,7 +498,12 @@ class Logic : public Model {
     void repeatsave() {
         for(int i = 1; i < repeats; ++i) {
             for(int j = 0; j < static_cast<int>(savedchange.size()); ++j) {
-                addCharacter(savedchange[j]);
+                if(savedchange[j] == 7) {
+                    addCharacter(KEY_BACKSPACE);
+                }
+                else {
+                    addCharacter(savedchange[j]);
+                }
             }
         }
         savedchange = "";
@@ -596,6 +601,10 @@ class Logic : public Model {
             ch = cntrl->getAction()->getchar();
         } 
 
+        if (!cmdstr.empty() && cmdstr[0] == 'E') {
+            cmdstr = "";
+        }
+
         if((isdigit(ch) || (!containsletter(numcmd) && matchshowcmd(ch))) && !botinsert_mode && !insert_mode) {
             numcmd += ch;
             if (numcmd == "0") {
@@ -610,6 +619,9 @@ class Logic : public Model {
             }
             else if (!numcmd.empty()) {
                 interpret_showcmd(numcmd, 0, ch);
+                if(ch == 10) {
+                    repeats = 0;
+                }
                 numcmd = "";
             }
             numcmd = "";
