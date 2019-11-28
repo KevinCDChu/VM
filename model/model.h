@@ -561,29 +561,31 @@ class Logic : public Model {
                 savecursor();
                 if(!cmdf(curline, end, ch)) {
                     returncursor();
+                    repeats = 0;
                     return;
                 }
                 for(int i = 1; i < repeats; ++i) {
                     if(!cmdf(curline, end, ch)) {
                         returncursor();
+                        repeats = 0;
                         return;
                     }
-                }
-                repeats = 0;
+                }    
             }
             else if (cmd == 'F') {
                 savecursor();
                 if(!cmdF(curline, end, ch)) {
                     returncursor();
+                    repeats = 0;
                     return;
                 }
                 for(int i = 1; i < repeats; ++i) {
                     if(!cmdF(curline, end, ch)) {
                         returncursor();
+                        repeats = 0;
                         return;
                     }
                 }
-                repeats = 0;
             }
         }
     }
