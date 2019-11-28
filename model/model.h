@@ -295,23 +295,18 @@ class Logic : public Model {
 
     void undo() {
         int start = undostack[undostack.size()-1].first.first;
-        int end = undostack[undostack.size()-1].first.second;
+        //int end = undostack[undostack.size()-1].first.second;
         std::vector<std::string> change = undostack[undostack.size()-1].second;
-        if (start == end) {
-            lines[start] = change[0]; 
-        }
-        else {
-            std::vector<std::string> tmp;
-            for (int i = 0; i < static_cast<int>(change.size()) + start; ++i) {
-                if(i < start) {
-                    tmp.push_back(lines[i]);
-                }
-                else {
-                    tmp.push_back(change[i-start]);
-                }
+        std::vector<std::string> tmp;
+        for (int i = 0; i < static_cast<int>(change.size()) + start; ++i) {
+            if(i < start) {
+                tmp.push_back(lines[i]);
             }
-            lines = tmp;
+            else {
+                tmp.push_back(change[i-start]);
+            }
         }
+        lines = tmp;
         undostack.pop_back();
     }
 
