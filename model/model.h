@@ -537,12 +537,12 @@ class Logic : public Model {
             }
             else if (cmd == 't') {
                 savecursor();
-                if(!cmdf(curline, end, ch)) {
+                if(!cmdt(curline, end, ch)) {
                     returncursor();
                     return;
                 }
                 for(int i = 1; i < repeats; ++i) {
-                    if(!cmdf(curline, end, ch)) {
+                    if(!cmdt(curline, end, ch)) {
                         returncursor();
                         return;
                     }
