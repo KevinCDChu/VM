@@ -567,16 +567,20 @@ class Logic : public Model {
         else {
             if(containsletter(numcmd)) {
                 interpret_showcmd(numcmd.substr(0, numcmd.size()-1), numcmd[numcmd.size()-1], ch);
+                numcmd = "";
+                return;
             }
             else if (!numcmd.empty()) {
                 interpret_showcmd(numcmd, 0, ch);
+                numcmd = "";
             }
-            numcmd = "";
+            
         }
 
         if(ch == 27) { // escape key
             cmdstr = "";
             numcmd = "";
+            repeats = 0;
             if (botinsert_mode) {
                 botinsert_mode = false;
                 clearbottom(views[0]->getHeight());
