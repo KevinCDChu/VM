@@ -536,8 +536,19 @@ class Logic : public Model {
 
     bool cmdF(int curline, int end, int ch) {
         if (cursor_x != 0) {
-            if (lines[curline].rfind(ch, cursor_x - 1) != std::string::npos) {
-                cursor_x = lines[curline].rfind(ch, cursor_x - 1);
+            if (lines[curline].find(ch, cursor_x + 1) != std::string::npos) {
+                cursor_x = lines[curline].find(ch, cursor_x + 1);
+                return true;
+            }
+            return false;
+        }
+        return false;
+    }
+
+    bool cmdt (int curline, int end, int ch) {
+        if (cursor_x != end) {
+            if (lines[curline].find(ch, cursor_x + 1) != std::string::npos) {
+                cursor_x = lines[curline].find(ch, cursor_x + 1) - 1;
                 return true;
             }
             return false;
@@ -550,6 +561,9 @@ class Logic : public Model {
             return true;
         }
         else if(ch == 'F') {
+            return true;
+        }
+        else if(ch == 't') {
             return true;
         }
         return false;
@@ -586,6 +600,22 @@ class Logic : public Model {
                 }
                 for(int i = 1; i < repeats; ++i) {
                     if(!cmdF(curline, end, ch)) {
+                        returncursor();
+                        repeats = 0;
+                        return;
+                    }
+                }
+            }
+            else if (cmd == 't') {
+                savecursor();
+                if(!cmdt(curline, end, ch)) {
+                    returncursor();
+                    repeats = 0;
+                    return;
+                }
+                for(int i = 1; i < repeats; ++i) {
+                    cursor_right();
+                    if(!cmdt(curline, end, ch)) {
                         returncursor();
                         repeats = 0;
                         return;
