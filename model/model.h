@@ -265,9 +265,6 @@ class Logic : public Model {
         if(comparable.size() == lines.size()) {
             while(comparable[i] == lines[i]) {
                 if(i == mxs - 1) {
-                    save.first.first = -1;
-                    save.first.second = -1;
-                    undostack.push_back(save);
                     return;
                 }
                 ++i;
@@ -301,7 +298,7 @@ class Logic : public Model {
         int end = undostack[undostack.size()-1].first.second;
         std::vector<std::string> change = undostack[undostack.size()-1].second;
         if (start == end) {
-            lines[start] = change[0];
+            lines[start] = change[0]; 
         }
         else {
             std::vector<std::string> tmp;
@@ -473,6 +470,9 @@ class Logic : public Model {
             cursor_x = lines[cursor_y + offset].size();
             goinsert();
             savecursor();
+        }
+        else if(ch == 'b') {
+
         }
     }
 };
