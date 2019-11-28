@@ -185,7 +185,6 @@ class Logic : public Model {
         }
         else if(cmd == ":w") {
             botinsert_mode = false;
-            filechange = false;
             cmdstr = "";
             save_file();
         }
@@ -277,7 +276,6 @@ class Logic : public Model {
         }
     }
 
-
     void wordforward() {
         int i = cursor_x;
         int curline = cursor_y + offset;
@@ -358,28 +356,6 @@ class Logic : public Model {
             }
         }
     }
-
-
-    void paste() {
-        int cur_line = cursor_y + offset;
-        int j = std::min(cursor_x, static_cast<int>(lines[cur_line].size()) - 1);
-        std::string last_part;
-        if(lines[cur_line] != "" && j != static_cast<int>(lines[cur_line].size() - 1)) {
-                last_part = lines[cur_line].substr(j + 1, lines[cur_line].size() - j - 1);
-                lines[cur_line] = lines[cur_line].substr(0, j + 1) + buffer[0];
-            } else {
-                lines[cur_line] += buffer[0];
-        }
-        for(int i = 1; i < static_cast<int>(buffer.size()); ++i) {
-            lines.insert(lines.begin() + cur_line + i, buffer[i]);
-        }
-        lines[cur_line + buffer.size() - 1] += last_part;
-        if(buffer.size() == 1) {
-            cursor_x += static_cast<int>(buffer[0].size());
-            //cursor_x = std::min(cursor_x, static_cast<int>(lines[cur_line].size()) - 1);
-        } 
-    }
-
 
     void updateViews() {
         for(auto &i : views) i->updateView();
@@ -613,13 +589,13 @@ class Logic : public Model {
                 interpret_showcmd(numcmd, 0, ch);
                 numcmd = "";
             }
+            numcmd = "";
             
         }
 
         if(ch == 27) { // escape key
             cmdstr = "";
             numcmd = "";
-            repeats = 0;
             if (botinsert_mode) {
                 botinsert_mode = false;
                 clearbottom(views[0]->getHeight());
@@ -632,11 +608,11 @@ class Logic : public Model {
                 insert_mode = false;
                 comparesaves();
             }
+            repeats = 0;
         }
         else if(insert_mode) {
             if(cursor_x != static_cast<int>(lines[cursor_y + offset].size())) cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size() - 1), 0)); // Fix cursor_x constant
-            if(ch == KEY_BACKSPACE && savedchange != "") savedchange = savedchange.substr(0, savedchange.length() - 1); // delete last thing if backspace
-            else savedchange += ch;
+            savedchange += ch;
             addCharacter(ch);
         }
         else if(botinsert_mode) {
