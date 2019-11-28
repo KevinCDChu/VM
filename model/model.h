@@ -436,6 +436,27 @@ class Logic : public Model {
         undostack.push_back(save);
     }
 
+
+    void paste() {
+        int cur_line = cursor_y + offset;
+        int j = std::min(cursor_x, static_cast<int>(lines[cur_line].size()) - 1);
+        std::string last_part;
+        if(lines[cur_line] != "" && j != static_cast<int>(lines[cur_line].size() - 1)) {
+                last_part = lines[cur_line].substr(j + 1, lines[cur_line].size() - j - 1);
+                lines[cur_line] = lines[cur_line].substr(0, j + 1) + buffer[0];
+            } else {
+                lines[cur_line] += buffer[0];
+        }
+        for(int i = 1; i < static_cast<int>(buffer.size()); ++i) {
+            lines.insert(lines.begin() + cur_line + i, buffer[i]);
+        }
+        lines[cur_line + buffer.size() - 1] += last_part;
+        if(buffer.size() == 1) {
+            cursor_x += static_cast<int>(buffer[0].size());
+            //cursor_x = std::min(cursor_x, static_cast<int>(lines[cur_line].size()) - 1);
+        } 
+    }
+
     void undo() {
         int start = undostack[undostack.size()-1].first.first;
         //int end = undostack[undostack.size()-1].first.second;
