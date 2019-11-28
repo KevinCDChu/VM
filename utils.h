@@ -69,6 +69,11 @@ void count_parentheses(std::vector<std::string> &lines, int &offset, int &bracke
 }
 
 
+bool file_exists(std::string file_name) {
+	int ret = system(("test -r " + file_name).c_str());
+	return !WEXITSTATUS(ret);
+}
+
 
 
 #endif

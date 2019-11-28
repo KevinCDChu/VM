@@ -5,8 +5,7 @@
 
 hello
 */
-
-
+[
 
 	hello	what	is	up there
 
@@ -80,5 +79,5 @@ int main // (int argc, char * argv[]) {
         logic.interpret_input(ch);
         logic.displayViews();
     }
-    endwin(); */
+    endwin(); */ ]]
 }

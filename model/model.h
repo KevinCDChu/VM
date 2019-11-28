@@ -36,6 +36,7 @@ class Logic : public Model {
     std::vector<std::pair<std::pair <int, int>, std::vector<std::string>>> undostack; 
     std::vector<std::string> comparable;
     int backmovecount = 0;
+    std::vector<std::string> entire_file_buffer;
 
     void addView(View *v) override {
         views.push_back(v);
@@ -188,6 +189,12 @@ class Logic : public Model {
             cmdstr = "";
             save_file();
         }
+        else if(cmd.size() > 2 && cmd.substr(0,2) == ":r") {
+            botinsert_mode = false;
+            //filechange = true;
+            cmdstr = "";
+            read_into_file_buffer(cmd.substr(2, cmd.size() - 2));
+        }
         else if(cmd == ":q") {
             botinsert_mode = false;
             if (filechange == true) {
@@ -213,6 +220,14 @@ class Logic : public Model {
         else {
             botinsert_mode = false;
             cmdstr = "E492: Not an editor command: " + c;
+        }
+    }
+
+    void read_into_file_buffer(std::string file_name) {
+        if(file_exists(file_name)) {
+
+        } else {
+            cmdstr = "E484: Can't open file " + file_name;
         }
     }
 
@@ -629,6 +644,7 @@ class Logic : public Model {
                 botCommand(cmdstr);
                 clearbottom(views[0]->getHeight());
                 returncursor();
+                // if :r command we need to display file information
             } else if(cmdstr.size() == 1 && ch == KEY_BACKSPACE) { // backspace out of command
                 cmdstr = "";
                 botinsert_mode = false;
@@ -701,6 +717,7 @@ class Logic : public Model {
             savecursor();
         }
         else if(ch == 'b') {
+            cursor_x = std::min(cursor_x, static_cast<int>(lines[cursor_y + offset].size()) - 1);
             wordback();
             for(int i = 1; i < repeats; ++i) {
                 wordback();
@@ -708,6 +725,7 @@ class Logic : public Model {
             repeats = 0;
         }
         else if(ch == 'w') {
+            cursor_x = std::min(cursor_x, static_cast<int>(lines[cursor_y + offset].size()) - 1);
             wordforward();
             for(int i = 1; i < repeats; ++i) {
                 wordforward();
