@@ -40,7 +40,7 @@ void myprintw(std::string &line, std::vector<int> &cur_line, std::vector<std::st
 
 void strip_unnecessary_characters(std::string &first_string, std::string &middle, std::string &end_string, std::string &str, std::smatch &match) {
     int length = middle.length();
-    if(middle[middle.length() - 1] == ')' || middle[middle.length() - 1] == ',' || middle[middle.length() - 1] == '(' || middle[middle.length() - 1] == '>' || middle[middle.length() - 1] == '}') {
+    if(middle[middle.length() - 1] == ')' || middle[middle.length() - 1] == ',' || middle[middle.length() - 1] == '(' || middle[middle.length() - 1] == '>' || middle[middle.length() - 1] == '}' || middle[middle.length() - 1] == ';') {
         end_string = middle[middle.length() - 1];
         middle = middle.substr(0, length - 1);
     }
@@ -89,7 +89,7 @@ std::regex init_data_types() {
 
 std::regex init_keywords() {
     std::string str;
-    str += "[^a-zA-Z0-9:]return|";
+    str += "[^a-zA-Z0-9:]return[^a-zA-Z0-9:]|";
     str += "[^a-zA-Z0-9:]if( )*\\(?|^if( )*\\(?|";
     str += "[^a-zA-Z0-9:]for( )*\\(?|^for( )*\\(?|";
     str += "[^a-zA-Z0-9:]while( )*\\(?|^while( )*\\(?|";

@@ -184,6 +184,7 @@ class Logic : public Model {
         }
         else if(cmd == ":w") {
             botinsert_mode = false;
+            filechange = false;
             cmdstr = "";
             save_file();
         }
@@ -230,7 +231,7 @@ class Logic : public Model {
                     cursor_x = 0;
                 }
                 else if (curline) {
-                    cursor_x = static_cast<int>(lines[curline - 1].size() - 1);
+                    cursor_x = static_cast<int>(lines[curline - 1].size());
                     wordback();
                 }
             }
@@ -260,6 +261,7 @@ class Logic : public Model {
             }
         }
     }
+
 
     void wordforward() {
         int i = cursor_x;
@@ -310,14 +312,14 @@ class Logic : public Model {
             }
             else {
                 bool space = false;
-                while(i != end && !isWord(lines[curline][i]) && !isspace(lines[curline][i])) {
+                while(i != end && isPunc(lines[curline][i])) {
                     ++i;
                 }
                 while(i != end && isspace(lines[curline][i])) {
                     ++i;
                     space = true;
                 }
-                if(isPunc(lines[curline][i])) {
+                if(isWord(lines[curline][i])) {
                     space = true;
                 }
                 if(curline != std::max(static_cast<int>(lines.size()) - 1, 0) && i == end && (!space || isspace(lines[curline][i]))) {
@@ -341,6 +343,28 @@ class Logic : public Model {
             }
         }
     }
+
+
+    void paste() {
+        int cur_line = cursor_y + offset;
+        int j = std::min(cursor_x, static_cast<int>(lines[cur_line].size()) - 1);
+        std::string last_part;
+        if(lines[cur_line] != "" && j != static_cast<int>(lines[cur_line].size() - 1)) {
+                last_part = lines[cur_line].substr(j + 1, lines[cur_line].size() - j - 1);
+                lines[cur_line] = lines[cur_line].substr(0, j + 1) + buffer[0];
+            } else {
+                lines[cur_line] += buffer[0];
+        }
+        for(int i = 1; i < static_cast<int>(buffer.size()); ++i) {
+            lines.insert(lines.begin() + cur_line + i, buffer[i]);
+        }
+        lines[cur_line + buffer.size() - 1] += last_part;
+        if(buffer.size() == 1) {
+            cursor_x += static_cast<int>(buffer[0].size());
+            //cursor_x = std::min(cursor_x, static_cast<int>(lines[cur_line].size()) - 1);
+        } 
+    }
+
 
     void updateViews() {
         for(auto &i : views) i->updateView();
@@ -493,7 +517,7 @@ class Logic : public Model {
         return false;
     }
 
-    bool cmdt(int curline, int end, int ch) {
+    bool cmdF(int curline, int end, int ch) {
         if (cursor_x != 0) {
             if (lines[curline].rfind(ch, cursor_x - 1) != std::string::npos) {
                 cursor_x = lines[curline].rfind(ch, cursor_x - 1);
@@ -508,7 +532,7 @@ class Logic : public Model {
         if(ch == 'f') {
             return true;
         }
-        else if(ch == 't') {
+        else if(ch == 'F') {
             return true;
         }
         return false;
@@ -535,14 +559,14 @@ class Logic : public Model {
                 }
                 repeats = 0;
             }
-            else if (cmd == 't') {
+            else if (cmd == 'F') {
                 savecursor();
-                if(!cmdt(curline, end, ch)) {
+                if(!cmdF(curline, end, ch)) {
                     returncursor();
                     return;
                 }
                 for(int i = 1; i < repeats; ++i) {
-                    if(!cmdt(curline, end, ch)) {
+                    if(!cmdF(curline, end, ch)) {
                         returncursor();
                         return;
                     }
@@ -576,6 +600,7 @@ class Logic : public Model {
 
         if(ch == 27) { // escape key
             cmdstr = "";
+            numcmd = "";
             if (botinsert_mode) {
                 botinsert_mode = false;
                 clearbottom(views[0]->getHeight());
@@ -591,7 +616,8 @@ class Logic : public Model {
         }
         else if(insert_mode) {
             if(cursor_x != static_cast<int>(lines[cursor_y + offset].size())) cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size() - 1), 0)); // Fix cursor_x constant
-            savedchange += ch;
+            if(ch == KEY_BACKSPACE && savedchange != "") savedchange = savedchange.substr(0, savedchange.length() - 1); // delete last thing if backspace
+            else savedchange += ch;
             addCharacter(ch);
         }
         else if(botinsert_mode) {
@@ -682,6 +708,35 @@ class Logic : public Model {
             for(int i = 1; i < repeats; ++i) {
                 wordforward();
             }
+            repeats = 0;
+        }
+        else if(ch == 'x') {
+            comparable = lines;
+            buffer.clear();
+            buffer.push_back("");
+            savecursor();
+            int cur_line = cursor_y + offset;
+            if(lines[cur_line] != "") {
+                buffer[0] += lines[cur_line][cursor_x];
+                lines[cur_line] = lines[cur_line].substr(0, cursor_x) + lines[cur_line].substr(cursor_x + 1, lines[cur_line].length() - cursor_x - 1);
+            }
+            for(int i = 1; i < repeats; ++i) {
+                if(lines[cur_line] != "") {
+                buffer[0] += lines[cur_line][cursor_x];
+                lines[cur_line] = lines[cur_line].substr(0, cursor_x) + lines[cur_line].substr(cursor_x + 1, lines[cur_line].length() - cursor_x - 1);
+                }
+            }
+            comparesaves();
+            repeats = 0;
+        }
+        else if(ch == 'p') {
+            savecursor();
+            comparable = lines;
+            paste();
+            for(int i = 1; i < repeats; ++i) {
+                paste();
+            } 
+            comparesaves();
             repeats = 0;
         }
         
