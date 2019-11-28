@@ -9,12 +9,12 @@ void init_colours(bool code_file) {
     init_pair(1, COLOR_BLUE, COLOR_BLACK);
     init_pair(2, COLOR_WHITE, COLOR_RED);
     if(code_file) {
-        init_pair(3, COLOR_GREEN, COLOR_BLACK);
+        init_pair(3, COLOR_RED, COLOR_BLACK);
         init_pair(4, COLOR_CYAN, COLOR_BLACK);
         init_pair(5, COLOR_YELLOW, COLOR_BLACK);
         init_pair(6, COLOR_MAGENTA, COLOR_BLACK);
-        init_pair(7, COLOR_BLUE, COLOR_BLACK);
-        init_pair(8, COLOR_RED, COLOR_BLACK);
+        init_pair(7, COLOR_GREEN, COLOR_BLACK);
+        init_pair(8, COLOR_BLUE, COLOR_BLACK);
         init_pair(9, COLOR_GREEN, COLOR_BLACK); // need a seperate comment colour for multiline as comment will end it
         init_pair(10, COLOR_WHITE, COLOR_RED);
     } else {
@@ -77,8 +77,10 @@ std::regex init_data_types() {
     str += "^bool |[,(< ]bool | bool$|";
     str += "^char |[,(< ]char[,)> ]|[,(< ]char$|";
     str += "^void |[,(< ]void[,)> ]|[,(< ]void$|";
+    str += "^size_t |[,(< ]size_t[,)> ]|[,(< ]size_t$|";
     str += "^const |[,(< ]const[,)> ]|[,(< ]const$|";
     str += "^virtual |[,(< ]virtual[,)> ]|[,(< ]virtual$|";
+    str += "^auto |[,(< ]auto[,)> ]|[,(< ]auto$|";
     str += " override |";
     str += "^class |[,(< ]class[,)> ]|[,(< ]class$";
     std::regex re(str);
@@ -258,9 +260,9 @@ void myprintw_helper(std::string &line, int checker, int &cur_line, std::vector<
         int comment_idx = comment_match.position(0);
         std::string before = line.substr(0, comment_idx);
         myprintw_helper(before, checker - 1, cur_line, lines, brackets, braces, parentheses);
-        attron(COLOR_PAIR(3));
+        attron(COLOR_PAIR(7));
         printw(line.substr(comment_idx, static_cast<int>(line.size()) - comment_idx));
-        attroff(COLOR_PAIR(3));
+        attroff(COLOR_PAIR(7));
     } else if(std::regex_search(line, match_preprocessor, preprocessor) && checker >= 7) { // preprocessor directive
         std::regex include_part("^( )*#( )*include|#( )*define( )+([^ ])+|#( )*endif|#( )*ifndef( )+([^ ])+");
         std::smatch include_part_match;
