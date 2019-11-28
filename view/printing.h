@@ -95,6 +95,8 @@ std::regex init_keywords() {
     str += " new|";
     str += "[^a-zA-Z0-9:]public|";
     str += "[^a-zA-Z0-9:]protected|";
+    str += "static_cast|";
+    str += "dynamic_cast|";
     str += "[^a-zA-Z0-9:]private";
 
 

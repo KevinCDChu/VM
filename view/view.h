@@ -72,10 +72,11 @@ class Window : public View {
     }
 
     int adjustx(int x, int y, std::vector<std::string> &lines, int offset) {
+        int y_plus_offset = std::min(y + offset, static_cast<int>(lines.size() - 1)); // needed as this might cause segfault
         int taboff = 0;
         int tabcol = 8;
         for(int i = 0; i < std::min(static_cast<int>(lines[y+offset].size()), x+1); ++i) {
-            if(lines[y+offset][i] == '\t') {
+            if(lines[y_plus_offset][i] == '\t') {
                 taboff += tabcol-1;
                 tabcol = 9;
             }
