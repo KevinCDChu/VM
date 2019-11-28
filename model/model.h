@@ -341,20 +341,6 @@ class Logic : public Model {
         }
     }
 
-    bool isWord(size_t c) {
-        if(isdigit(c) || isalpha(c) || c == '_') {
-            return true;
-        }
-        return false;
-    } 
-
-    bool isPunc(size_t c) {
-        if(isWord(c) || isspace(c)) {
-            return false;
-        }
-        return true;
-    }
-
     void updateViews() {
         for(auto &i : views) i->updateView();
     }
@@ -495,18 +481,94 @@ class Logic : public Model {
         }
     }
 
+    bool cmdf(int curline, int end, int ch) {
+        if (cursor_x != end) {
+            if (lines[curline].find(ch, cursor_x + 1) != std::string::npos) {
+                cursor_x = lines[curline].find(ch, cursor_x + 1);
+                return true;
+            }
+            return false;
+        }
+        return false;
+    }
+
+    bool cmdt(int curline, int end, int ch) {
+        if (cursor_x != 0) {
+            if (lines[curline].rfind(ch, cursor_x - 1) != std::string::npos) {
+                cursor_x = lines[curline].rfind(ch, cursor_x - 1);
+                return true;
+            }
+            return false;
+        }
+        return false;
+    }
+
+    bool matchshowcmd(int ch) {
+        if(ch == 'f') {
+            return true;
+        }
+        else if(ch == 't') {
+            return true;
+        }
+        return false;
+    }
+
+    void interpret_showcmd(std::string num, int cmd, int ch) {
+        if (!num.empty()) {
+            repeats = stoi(num);
+        }
+        if (cmd != 0) {
+            int curline = cursor_y + offset;
+            int end = std::max(static_cast<int>(lines[curline].size()) - 1, 0);
+            if (cmd == 'f') {
+                savecursor();
+                if(!cmdf(curline, end, ch)) {
+                    returncursor();
+                    return;
+                }
+                for(int i = 1; i < repeats; ++i) {
+                    if(!cmdf(curline, end, ch)) {
+                        returncursor();
+                        return;
+                    }
+                }
+                repeats = 0;
+            }
+            else if (cmd == 't') {
+                savecursor();
+                if(!cmdt(curline, end, ch)) {
+                    returncursor();
+                    return;
+                }
+                for(int i = 1; i < repeats; ++i) {
+                    if(!cmdt(curline, end, ch)) {
+                        returncursor();
+                        return;
+                    }
+                }
+                repeats = 0;
+            }
+        }
+    }
+
     void interpret_input(int ch = 0) { // make it possible to do command not from keyboard
         if(ch == 0) {
             cntrl->genAction();
             ch = cntrl->getAction()->getchar();
         } 
 
-        if(isdigit(ch) && !botinsert_mode && !insert_mode) {
+        if((isdigit(ch) || (!containsletter(numcmd) && matchshowcmd(ch))) && !botinsert_mode && !insert_mode) {
             numcmd += ch;
+            if (numcmd == "0") {
+                numcmd = "";
+            }
         }
         else {
-            if(numcmd != "") {
-                repeats = stoi(numcmd);
+            if(containsletter(numcmd)) {
+                interpret_showcmd(numcmd.substr(0, numcmd.size()-1), numcmd[numcmd.size()-1], ch);
+            }
+            else if (!numcmd.empty()) {
+                interpret_showcmd(numcmd, 0, ch);
             }
             numcmd = "";
         }
@@ -609,10 +671,19 @@ class Logic : public Model {
         }
         else if(ch == 'b') {
             wordback();
+            for(int i = 1; i < repeats; ++i) {
+                wordback();
+            }
+            repeats = 0;
         }
         else if(ch == 'w') {
             wordforward();
+            for(int i = 1; i < repeats; ++i) {
+                wordforward();
+            }
+            repeats = 0;
         }
+        
     }
 };
 

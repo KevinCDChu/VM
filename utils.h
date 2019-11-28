@@ -31,6 +31,28 @@ bool isnum(const std::string& s)
 }
 
 
+bool isWord(size_t c) {
+    if(isdigit(c) || isalpha(c) || c == '_') {
+        return true;
+    }
+    return false;
+} 
+
+bool isPunc(size_t c) {
+    if(isWord(c) || isspace(c)) {
+        return false;
+    }
+    return true;
+}
+
+bool containsletter(std::string s) {
+    for(int i = 0; i < static_cast<int>(s.size()); ++i) {
+        if(isalpha(s[i])) {
+            return true;
+        }
+    }
+    return false;
+}
 
 
 
