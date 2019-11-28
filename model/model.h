@@ -536,7 +536,12 @@ class Logic : public Model {
     void repeatsave() {
         for(int i = 1; i < repeats; ++i) {
             for(int j = 0; j < static_cast<int>(savedchange.size()); ++j) {
-                addCharacter(savedchange[j]);
+                if(savedchange[j] == 7) {
+                    addCharacter(KEY_BACKSPACE);
+                }
+                else {
+                    addCharacter(savedchange[j]);
+                }
             }
         }
         savedchange = "";
@@ -569,8 +574,19 @@ class Logic : public Model {
 
     bool cmdF(int curline, int end, int ch) {
         if (cursor_x != 0) {
-            if (lines[curline].rfind(ch, cursor_x - 1) != std::string::npos) {
-                cursor_x = lines[curline].rfind(ch, cursor_x - 1);
+            if (lines[curline].find(ch, cursor_x + 1) != std::string::npos) {
+                cursor_x = lines[curline].find(ch, cursor_x + 1);
+                return true;
+            }
+            return false;
+        }
+        return false;
+    }
+
+    bool cmdt (int curline, int end, int ch) {
+        if (cursor_x != end) {
+            if (lines[curline].find(ch, cursor_x + 1) != std::string::npos) {
+                cursor_x = lines[curline].find(ch, cursor_x + 1) - 1;
                 return true;
             }
             return false;
@@ -583,6 +599,9 @@ class Logic : public Model {
             return true;
         }
         else if(ch == 'F') {
+            return true;
+        }
+        else if(ch == 't') {
             return true;
         }
         return false;
@@ -599,29 +618,47 @@ class Logic : public Model {
                 savecursor();
                 if(!cmdf(curline, end, ch)) {
                     returncursor();
+                    repeats = 0;
                     return;
                 }
                 for(int i = 1; i < repeats; ++i) {
                     if(!cmdf(curline, end, ch)) {
                         returncursor();
+                        repeats = 0;
                         return;
                     }
-                }
-                repeats = 0;
+                }    
             }
             else if (cmd == 'F') {
                 savecursor();
                 if(!cmdF(curline, end, ch)) {
                     returncursor();
+                    repeats = 0;
                     return;
                 }
                 for(int i = 1; i < repeats; ++i) {
                     if(!cmdF(curline, end, ch)) {
                         returncursor();
+                        repeats = 0;
                         return;
                     }
                 }
-                repeats = 0;
+            }
+            else if (cmd == 't') {
+                savecursor();
+                if(!cmdt(curline, end, ch)) {
+                    returncursor();
+                    repeats = 0;
+                    return;
+                }
+                for(int i = 1; i < repeats; ++i) {
+                    cursor_right();
+                    if(!cmdt(curline, end, ch)) {
+                        returncursor();
+                        repeats = 0;
+                        return;
+                    }
+                }
             }
         }
     }
@@ -631,6 +668,10 @@ class Logic : public Model {
             cntrl->genAction();
             ch = cntrl->getAction()->getchar();
         } 
+
+        if (!cmdstr.empty() && cmdstr[0] == 'E') {
+            cmdstr = "";
+        }
 
         if((isdigit(ch) || (!containsletter(numcmd) && matchshowcmd(ch))) && !botinsert_mode && !insert_mode) {
             numcmd += ch;
@@ -646,6 +687,9 @@ class Logic : public Model {
             }
             else if (!numcmd.empty()) {
                 interpret_showcmd(numcmd, 0, ch);
+                if(ch == 10) {
+                    repeats = 0;
+                }
                 numcmd = "";
             }
             numcmd = "";
