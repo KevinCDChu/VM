@@ -214,6 +214,147 @@ class Logic : public Model {
         }
     }
 
+    void wordback() {
+        int i = cursor_x;
+        int curline = cursor_y + offset;
+        if (i != 0) {
+            --i;
+            cursor_x = i;
+            while(i != 0 && isspace(lines[curline][i])) {
+                --i;
+            }
+            if (i == 0 && isspace(lines[curline][i])) {
+                cursor_up();
+                if (static_cast<int>(lines[curline - 1].size()) == 0) {
+                    cursor_x = 0;
+                }
+                else if (curline) {
+                    cursor_x = static_cast<int>(lines[curline - 1].size() - 1);
+                    wordback();
+                }
+            }
+            else {
+                if(isWord(lines[curline][i])) {
+                    while(i != 0 && isWord(lines[curline][i-1])) {
+                        --i;
+                    }
+                cursor_x = i;
+                }
+                else {
+                    while(i != 0 && !isWord(lines[curline][i-1]) && !isspace(lines[curline][i-1])) {
+                        --i;
+                    }
+                    cursor_x = i;
+                }
+            }
+        }
+        else if (curline) {
+            cursor_up();
+            if (static_cast<int>(lines[curline - 1].size()) == 0) {
+                cursor_x = 0;
+            }
+            else {
+                cursor_x = static_cast<int>(lines[curline - 1].size());
+                wordback();
+            }
+        }
+    }
+
+    void wordforward() {
+        int i = cursor_x;
+        int curline = cursor_y + offset;
+        int end = std::max(static_cast<int>(lines[curline].size()) - 1, 0);
+        if (i != end) {
+            int curchar;
+            if (i == -1) curchar = '\n';
+            else curchar = lines[curline][i];
+            ++i;
+            if(isspace(curchar)) {
+                while(i != end && isspace(lines[curline][i])) {
+                    ++i;
+                }
+                if(curline != std::max(static_cast<int>(lines.size()) - 1, 0) && i == end && isspace(lines[curline][i])) {
+                    cursor_down();
+                    cursor_x = 0;
+                    if (static_cast<int>(lines[curline + 1].size()) != 0 && isspace(lines[curline + 1][0])) {
+                        wordforward();
+                    }
+                }
+                else {
+                    cursor_x = i;
+                }
+            }
+            else if(isWord(curchar)) {
+                bool space = false;
+                while(i != end && isWord(lines[curline][i])) {
+                    ++i;
+                }
+                while(i != end && isspace(lines[curline][i])) {
+                    ++i;
+                    space = true;
+                }
+                if(isPunc(lines[curline][i])) {
+                    space = true;
+                }
+                if(curline != std::max(static_cast<int>(lines.size()) - 1, 0) && i == end && (!space || isspace(lines[curline][i]))) {
+                    cursor_down();
+                    cursor_x = 0;
+                    if (static_cast<int>(lines[curline + 1].size()) != 0 && isspace(lines[curline + 1][0])) {
+                        wordforward();
+                    }
+                }
+                else {
+                    cursor_x = i;
+                }
+            }
+            else {
+                bool space = false;
+                while(i != end && !isWord(lines[curline][i]) && !isspace(lines[curline][i])) {
+                    ++i;
+                }
+                while(i != end && isspace(lines[curline][i])) {
+                    ++i;
+                    space = true;
+                }
+                if(isPunc(lines[curline][i])) {
+                    space = true;
+                }
+                if(curline != std::max(static_cast<int>(lines.size()) - 1, 0) && i == end && (!space || isspace(lines[curline][i]))) {
+                    cursor_down();
+                    cursor_x = 0;
+                    if (static_cast<int>(lines[curline + 1].size()) != 0 && isspace(lines[curline + 1][0])) {
+                        wordforward();
+                    }
+                }
+                else {
+                    cursor_x = i;
+                }
+            }
+        }
+        else if (curline != std::max(static_cast<int>(lines.size()) - 1, 0)) {
+            cursor_down();
+            cursor_x = 0;
+            if (static_cast<int>(lines[curline + 1].size()) != 0) {
+                cursor_x = -1;
+                wordforward();
+            }
+        }
+    }
+
+    bool isWord(size_t c) {
+        if(isdigit(c) || isalpha(c) || c == '_') {
+            return true;
+        }
+        return false;
+    } 
+
+    bool isPunc(size_t c) {
+        if(isWord(c) || isspace(c)) {
+            return false;
+        }
+        return true;
+    }
+
     void updateViews() {
         for(auto &i : views) i->updateView();
     }
@@ -467,7 +608,10 @@ class Logic : public Model {
             savecursor();
         }
         else if(ch == 'b') {
-
+            wordback();
+        }
+        else if(ch == 'w') {
+            wordforward();
         }
     }
 };
