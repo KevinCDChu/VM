@@ -38,6 +38,7 @@ class Logic : public Model {
     std::vector<std::string> comparable;
     int backmovecount = 0;
     std::vector<std::string> entire_file_buffer;
+    bool insert_did_something = false; // true if insert actually did something
 
     void addView(View *v) override {
         views.push_back(v);
@@ -584,7 +585,7 @@ class Logic : public Model {
         prevloc.pop_back();
     }
 
-    void comparesaves() {
+    void comparesaves() { 
         int mxs = std::min(static_cast<int>(comparable.size()), static_cast<int>(lines.size()));
         std::pair<std::pair<int, int>, std::vector<std::string>> save;
         int linestart = std::max(prevloc.back().second + backmovecount, 0);
@@ -964,13 +965,15 @@ class Logic : public Model {
                 cursor_x = std::max(cursor_x - 1, 0);
                 insert_mode = false;
                 replace_mode = false;
-                comparesaves();
+                if(insert_did_something) comparesaves();
+                insert_did_something = false;
             }
             repeats = 0;
         }
         else if(insert_mode) {
             if(cursor_x != static_cast<int>(lines[cursor_y + offset].size())) cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size() - 1), 0)); // Fix cursor_x constant
             savedchange += ch;
+            insert_did_something = true;
             addCharacter(ch);
         }
         else if(botinsert_mode) {
@@ -1103,6 +1106,32 @@ class Logic : public Model {
                 else lines[cur_line] = lines[cur_line].substr(0, j);
                 }
             }
+            comparesaves();
+            repeats = 0;
+        }
+        else if(ch == 'X') {
+            comparable = lines;
+            buffer.clear();
+            buffer.push_back("");
+            int cur_line = cursor_y + offset;
+            int k = std::min(cursor_x, static_cast<int>(lines[cur_line].size()) - 1);
+            int j = std::min(cursor_x, static_cast<int>(lines[cur_line].size()) - 1);
+            if(k != 0 && lines[cur_line] != "") {
+                buffer[0] += lines[cur_line][k - 1];
+                lines[cur_line] = lines[cur_line].substr(0, j - 1) + lines[cur_line].substr(j, static_cast<int>(lines[cur_line].size()));
+                cursor_x = std::max(0, cursor_x - 1);
+            }
+            for(int i = 1; i < repeats; ++i) {
+                if(lines[cur_line] != "") {
+                k = cursor_x;  
+                if(k != 0) {
+                buffer[0] += lines[cur_line][k - 1];
+                lines[cur_line] = lines[cur_line].substr(0, k - 1) + lines[cur_line].substr(k, static_cast<int>(lines[cur_line].size()));
+                cursor_x = std::max(0, cursor_x - 1);
+                }
+            } }
+            reverse(buffer[0].begin(), buffer[0].end());
+            savecursor(); // cursor does not return, so save here
             comparesaves();
             repeats = 0;
         }
