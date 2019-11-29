@@ -550,13 +550,19 @@ class Logic : public Model {
     }
 
 
+    int get_best_from_pair(std::pair<std::pair<int,int>,std::pair<int,int>> &pair, int &line) {
+        int best_start = 9999;
+        int best_end = 9999;
+        if(pair.first.first == line && pair.first.second >= cursor_x) best_start = pair.first.second;
+        if(pair.second.first == line && pair.second.second >= cursor_x) best_end = pair.second.second;
+        return(std::min(best_start, best_end));
+    }
+
+
     bool better_pair(std::pair<std::pair<int,int>,std::pair<int,int>> &new_pair, std::pair<std::pair<int,int>,std::pair<int,int>> &old_pair, int line) {
-        int j = std::min(cursor_x, std::max(0, static_cast<int>(lines[line].size() - 1)));
-        if((old_pair.first.first == line || old_pair.first.first == 9999) && new_pair.first.first == line && new_pair.first.second >= j && new_pair.first.second <= old_pair.first.second) return true;
-        if((old_pair.second.first == line || old_pair.second.first == 9999) && new_pair.first.first == line && new_pair.first.second >= j && new_pair.first.second <= old_pair.second.second) return true;
-        if((old_pair.first.first == line || old_pair.first.first == 9999) && new_pair.second.first == line && new_pair.second.second >= j && new_pair.second.second <= old_pair.first.second) return true;
-        if((old_pair.second.first == line || old_pair.second.first == 9999) && new_pair.second.first == line && new_pair.second.second >= j && new_pair.second.second <= old_pair.second.second) return true;
-        return false;
+        int best_new = get_best_from_pair(new_pair, line);
+        int best_old = get_best_from_pair(old_pair, line);
+        return best_new < best_old;        
    }
 
     void move_cursor_to_best_pair(std::vector<std::pair<std::pair<int,int>,std::pair<int,int>>> &parentheses, std::vector<std::pair<std::pair<int,int>,std::pair<int,int>>> &brackets, std::vector<std::pair<std::pair<int,int>, std::pair<int,int>>> &braces, int &cur_line) {
@@ -573,26 +579,33 @@ class Logic : public Model {
                 if(i.first.first == cur_line && better_pair(i, best_pair, i.first.first)) best_pair = i;
                 if(i.second.first == cur_line && better_pair(i, best_pair, i.second.first)) best_pair = i;
             }
+            int x;
+            int y;
             if(best_pair.first.first != 9999) {
                 if(best_pair.first.first != cur_line) {
-                    cursor_x = best_pair.first.second; // open is the one on the line for sure
-                    cursor_y = best_pair.first.first;
+                    x = best_pair.first.second; // open is the one on the line for sure
+                    y = best_pair.first.first;
                 }
                 else if(best_pair.second.first != cur_line) {
-                    cursor_x = best_pair.second.second;
-                    cursor_y = best_pair.second.first;
+                    x = best_pair.second.second;
+                    y = best_pair.second.first;
                 }
                 else { // they are on the same line
                     if(best_pair.first.second >= cursor_x) {
-                        cursor_x = best_pair.second.second;
-                        cursor_y = best_pair.second.first;
+                        x = best_pair.second.second;
+                        y = best_pair.second.first;
                     } else {
-                        cursor_x = best_pair.first.second;
-                        cursor_y = best_pair.first.first;
+                        x = best_pair.first.second;
+                        y = best_pair.first.first;
                     }
                 }
+                while(offset + cursor_y != y) {
+                if(offset + cursor_y < y) cursor_down();
+                else cursor_up();
             }
-
+            cursor_x = x;
+            }
+            
     }
 
 
@@ -1002,6 +1015,16 @@ class Logic : public Model {
             }
             cursor_x = std::max(static_cast<int>(lines[curline].size()) - 1, 0);
         }
+        else if(ch == '%') {
+            cursor_x = std::min(cursor_x, std::max(0, static_cast<int>(lines[cursor_y + offset].size() - 1)));
+            std::vector<std::pair<std::pair<int,int>,std::pair<int,int>>> parentheses;
+            std::vector<std::pair<std::pair<int,int>,std::pair<int,int>>> brackets;
+            std::vector<std::pair<std::pair<int,int>,std::pair<int,int>>> braces;
+            get_bracket_pairs(parentheses, brackets, braces);
+            int cur_line = cursor_y + offset;
+            move_cursor_to_best_pair(parentheses, brackets, braces, cur_line);
+        }
+
     }
 };
 
