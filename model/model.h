@@ -909,7 +909,24 @@ class Logic : public Model {
             goinsert();
             savecursor();
         }
-        
+        else if(ch == '0') {
+            cursor_x = 0;
+            repeats = 0;
+        }
+        else if(ch == '^') {
+            cursor_x = 0;
+            int curline = offset + cursor_y;
+            while(cursor_x != std::max(static_cast<int>(lines[curline].size()) - 1, 0) && isspace(lines[curline][cursor_x])) {
+                cursor_right();
+            }
+            repeats = 0;
+        }
+        else if(ch == '$') {
+            for(int i = 1; i < repeats; ++i) {
+                cursor_down();
+            }
+            cursor_x = std::max(static_cast<int>(lines[curline].size()) - 1, 0);
+        }
     }
 };
 
