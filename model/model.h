@@ -691,23 +691,39 @@ class Logic : public Model {
             }
             int x;
             int y;
+            bool first_is_the_pair;
             if(best_pair.first.first != 9999) {
                 if(best_pair.first.first != cur_line) {
                     x = best_pair.first.second; // open is the one on the line for sure
                     y = best_pair.first.first;
+                    first_is_the_pair = true;
                 }
                 else if(best_pair.second.first != cur_line) {
                     x = best_pair.second.second;
                     y = best_pair.second.first;
+                    first_is_the_pair = false;
                 }
                 else { // they are on the same line
                     if(best_pair.first.second >= cursor_x) {
                         x = best_pair.second.second;
                         y = best_pair.second.first;
+                        first_is_the_pair = false;
                     } else {
                         x = best_pair.first.second;
                         y = best_pair.first.first;
+                        first_is_the_pair = true;
                     }
+                }
+                size_t check_x;
+                if(first_is_the_pair) check_x = best_pair.second.second;
+                else check_x = best_pair.first.second;
+                for(size_t i = cursor_x + 1; i < check_x; ++i) {
+                    if(lines[cur_line][i] == '{' ||
+                       lines[cur_line][i] == '}' ||
+                       lines[cur_line][i] == '(' ||
+                       lines[cur_line][i] == ')' ||
+                       lines[cur_line][i] == '[' ||
+                       lines[cur_line][i] == ']') return;
                 }
                 while(offset + cursor_y != y) {
                 if(offset + cursor_y < y) cursor_down();
@@ -903,13 +919,21 @@ class Logic : public Model {
                 int j = std::min(cursor_x, std::max(0, static_cast<int>(lines[curline].size() - 1)));
                 savecursor();
                 comparable = lines;
-                if(j + repeats > end + 1) {
+                if(j + repeats > end + 1 || ch == KEY_BACKSPACE || ch == KEY_DC) {
                     returncursor();
                     repeats = 0;
                     return;
                 }
                 for(int i = 0; i < repeats; ++i) {
                     lines[curline][j + i] = ch;
+                    if(ch == 10) {
+                        std::string new_line = lines[cursor_y + offset].substr(j + repeats, static_cast<int>(lines[cursor_y + offset].size()) - j - repeats);
+                        lines[cursor_y + offset] = lines[cursor_y + offset].substr(0, j);
+                        lines.insert(lines.begin() + cursor_y + offset + 1, new_line);
+                        cursor_down();
+                        cursor_x = 0;
+                        break;
+                    }
                     if(i != 0) cursor_right();
                 }
                 repeats = 0;
@@ -936,6 +960,7 @@ class Logic : public Model {
         }
         else {
             if(containsletter(numcmd)) {
+                reformat_command(numcmd); // needed in case of double multipliers (like 3d4l)
                 interpret_showcmd(numcmd.substr(0, numcmd.size()-1), numcmd[numcmd.size()-1], ch);
                 numcmd = "";
                 return;

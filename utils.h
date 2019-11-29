@@ -1,6 +1,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 #include <ncurses.h>
+#include <string>
 
 
 void printw(std::string str) {
@@ -53,6 +54,38 @@ bool containsletter(std::string s) {
     }
     return false;
 }
+
+
+int get_product_of_digits(std::string &command, char &og_command) {
+    std::string first_digits;
+    std::string second_digits;
+    bool in_first = true;
+    for(auto i : command) {
+        if(isalpha(i)) {
+            in_first = false;
+            og_command = i;
+        } else {
+            if(in_first) first_digits += i;
+            else second_digits += i;
+        }
+    }
+    return stoi(first_digits) * stoi(second_digits);
+}
+
+
+void reformat_command(std::string &command) {
+    int end = command.size() - 1;
+    if(command[end] == 'h' || command[end] == 'j'|| command[end] == 'k' || command[end] == 'l' ) {
+        char og_command; // remember which command we are trying to do (c, y, d)
+        char last_letter = command[end]; // store what the last letter is
+        int multiplier = get_product_of_digits(command, og_command);
+        command = "";
+        command += std::to_string(multiplier);
+        command += og_command;
+        command += last_letter;
+    }
+}
+
 
 void count_parentheses(std::vector<std::string> &lines, int &offset, int &brackets, int &braces, int &parentheses) {
     for(int i = 0; i < offset; ++i) {
