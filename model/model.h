@@ -607,6 +607,9 @@ class Logic : public Model {
         }
         else if(ch == 't') {
             return true;
+        } 
+        else if(ch == 'r') {
+            return true;
         }
         return false;
     }
@@ -663,6 +666,22 @@ class Logic : public Model {
                         return;
                     }
                 }
+            }
+            else if (cmd == 'r') {
+                if(num.empty()) repeats = 1;
+                int j = std::min(cursor_x, std::max(0, static_cast<int>(lines[curline].size() - 1)));
+                savecursor();
+                comparable = lines;
+                if(j + repeats > end + 1) {
+                    returncursor();
+                    repeats = 0;
+                    return;
+                }
+                for(int i = 0; i < repeats; ++i) {
+                    lines[curline][j + i] = ch;
+                    cursor_right();
+                }
+                comparesaves();
             }
         }
     }
