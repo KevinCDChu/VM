@@ -512,6 +512,93 @@ class Logic : public Model {
         undostack.push_back(save);
     }
 
+    void get_bracket_pairs(std::vector<std::pair<std::pair<int,int>,std::pair<int,int>>> &parentheses, std::vector<std::pair<std::pair<int,int>,std::pair<int,int>>> &brackets, std::vector<std::pair<std::pair<int,int>, std::pair<int,int>>> &braces) {
+        std::vector<std::pair<std::pair<int,int>,std::pair<int,int>>> temp_parentheses;
+        std::vector<std::pair<std::pair<int,int>,std::pair<int,int>>> temp_brackets;
+        std::vector<std::pair<std::pair<int,int>,std::pair<int,int>>> temp_braces;
+        for(size_t i = 0; i < lines.size(); ++i) {
+            for(size_t j = 0; j < lines[i].size(); ++j) {
+                if(lines[i][j] == '(') {
+                    std::pair<int,int> start = std::make_pair(i,j);
+                    std::pair<int,int> end = std::make_pair(-1,-1);
+                    temp_parentheses.push_back(std::make_pair(start, end));
+                } else if(lines[i][j] == '[') {
+                    std::pair<int,int> start = std::make_pair(i,j);
+                    std::pair<int,int> end = std::make_pair(-1,-1);
+                    temp_brackets.push_back(std::make_pair(start, end));
+                } else if(lines[i][j] == '{') {
+                    std::pair<int,int> start = std::make_pair(i,j);
+                    std::pair<int,int> end = std::make_pair(-1,-1);
+                    temp_braces.push_back(std::make_pair(start, end));
+                } else if(lines[i][j] == '}' && !temp_braces.empty()) {
+                    temp_braces[temp_braces.size() - 1].second.first = i;
+                    temp_braces[temp_braces.size() - 1].second.second = j;
+                    braces.push_back(temp_braces.back());
+                    temp_braces.pop_back();
+                } else if(lines[i][j] == ']' && !temp_brackets.empty()) {
+                    temp_brackets[temp_brackets.size() - 1].second.first = i;
+                    temp_brackets[temp_brackets.size() - 1].second.second = j;
+                    brackets.push_back(temp_brackets.back());
+                    temp_brackets.pop_back();
+                } else if(lines[i][j] == ')' && !temp_parentheses.empty()) {
+                    temp_parentheses[temp_parentheses.size() - 1].second.first = i;
+                    temp_parentheses[temp_parentheses.size() - 1].second.second = j;
+                    parentheses.push_back(temp_parentheses.back());
+                    temp_parentheses.pop_back();
+                } 
+            }
+        }
+    }
+
+
+    bool better_pair(std::pair<std::pair<int,int>,std::pair<int,int>> &new_pair, std::pair<std::pair<int,int>,std::pair<int,int>> &old_pair, int line) {
+        int j = std::min(cursor_x, std::max(0, static_cast<int>(lines[line].size() - 1)));
+        if((old_pair.first.first == line || old_pair.first.first == 9999) && new_pair.first.first == line && new_pair.first.second >= j && new_pair.first.second <= old_pair.first.second) return true;
+        if((old_pair.second.first == line || old_pair.second.first == 9999) && new_pair.first.first == line && new_pair.first.second >= j && new_pair.first.second <= old_pair.second.second) return true;
+        if((old_pair.first.first == line || old_pair.first.first == 9999) && new_pair.second.first == line && new_pair.second.second >= j && new_pair.second.second <= old_pair.first.second) return true;
+        if((old_pair.second.first == line || old_pair.second.first == 9999) && new_pair.second.first == line && new_pair.second.second >= j && new_pair.second.second <= old_pair.second.second) return true;
+        return false;
+   }
+
+    void move_cursor_to_best_pair(std::vector<std::pair<std::pair<int,int>,std::pair<int,int>>> &parentheses, std::vector<std::pair<std::pair<int,int>,std::pair<int,int>>> &brackets, std::vector<std::pair<std::pair<int,int>, std::pair<int,int>>> &braces, int &cur_line) {
+            std::pair<std::pair<int,int>,std::pair<int,int>> best_pair = std::make_pair(std::make_pair(9999,9999), std::make_pair(9999, 9999));
+            for(auto &i : parentheses) {
+                if(i.first.first == cur_line && better_pair(i, best_pair, i.first.first)) best_pair = i;
+                if(i.second.first == cur_line && better_pair(i, best_pair, i.second.first)) best_pair = i;
+            }
+            for(auto &i : braces) {
+                if(i.first.first == cur_line && better_pair(i, best_pair, i.first.first)) best_pair = i;
+                if(i.second.first == cur_line && better_pair(i, best_pair, i.second.first)) best_pair = i;
+            }
+            for(auto &i : brackets) {
+                if(i.first.first == cur_line && better_pair(i, best_pair, i.first.first)) best_pair = i;
+                if(i.second.first == cur_line && better_pair(i, best_pair, i.second.first)) best_pair = i;
+            }
+            if(best_pair.first.first != 9999) {
+                if(best_pair.first.first != cur_line) {
+                    cursor_x = best_pair.first.second; // open is the one on the line for sure
+                    cursor_y = best_pair.first.first;
+                }
+                else if(best_pair.second.first != cur_line) {
+                    cursor_x = best_pair.second.second;
+                    cursor_y = best_pair.second.first;
+                }
+                else { // they are on the same line
+                    if(best_pair.first.second >= cursor_x) {
+                        cursor_x = best_pair.second.second;
+                        cursor_y = best_pair.second.first;
+                    } else {
+                        cursor_x = best_pair.first.second;
+                        cursor_y = best_pair.first.first;
+                    }
+                }
+            }
+
+    }
+
+
+
+
 
     void paste() {
         int cur_line = cursor_y + offset;
@@ -909,7 +996,14 @@ class Logic : public Model {
             goinsert();
             savecursor();
         }
-        
+        else if(ch == '%') {
+            std::vector<std::pair<std::pair<int,int>,std::pair<int,int>>> parentheses;
+            std::vector<std::pair<std::pair<int,int>,std::pair<int,int>>> brackets;
+            std::vector<std::pair<std::pair<int,int>,std::pair<int,int>>> braces;
+            get_bracket_pairs(parentheses, brackets, braces);
+            int cur_line = cursor_y + offset;
+            move_cursor_to_best_pair(parentheses, brackets, braces, cur_line);
+        }
     }
 };
 
