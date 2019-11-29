@@ -201,10 +201,114 @@ class Logic : public Model {
         }
     }
 
+    void forwardsearch(std::string s) {
+        int curline = prevloc.back().first.second + offset;
+        int prevline = curline;
+        if(!lines[curline].empty()) {
+            if(lines[curline].find(s, prevloc.back().first.first + 1) != std::string::npos) {
+                prevloc.back().first.first = lines[curline].find(s, prevloc.back().first.first + 1);
+                return;
+            }
+        }
+        if(curline < static_cast<int>(lines.size())) {
+            ++curline;
+        }
+        while(curline < static_cast<int>(lines.size())) {
+            if(lines[curline].find(s) != std::string::npos) {
+                prevloc.back().first.first = lines[curline].find(s);
+                prevloc.back().second = curline;
+                return;
+            }
+            ++curline;
+        }
+        curline = 0;
+        while(curline != prevline) {
+            if(lines[curline].find(s) != std::string::npos) {
+                prevloc.back().first.first = lines[curline].find(s);
+                prevloc.back().second = curline;
+                cmdstr = "search hit BOTTOM, continuing at TOP";
+                return;
+            }
+            ++curline;
+        }
+        if(!lines[curline].empty()) {
+            if((lines[curline].substr(0, prevloc.back().first.first + 1)).find(s)  != std::string::npos) {
+                prevloc.back().first.first = (lines[curline].substr(0, prevloc.back().first.first + 1)).find(s);
+                cmdstr = "search hit BOTTOM, continuing at TOP";
+                return;
+            }
+        }
+        cmdstr = "E486: Pattern not found: " + s;
+    }
+
+    void backwardsearch(std::string s) {
+       int curline = prevloc.back().first.second + offset;
+        int prevline = curline;
+        if(!lines[curline].empty()) {
+            if(lines[curline].rfind(s, prevloc.back().first.first - 1) != std::string::npos) {
+                prevloc.back().first.first = lines[curline].rfind(s, prevloc.back().first.first - 1);
+                return;
+            }
+        }
+        if(curline > -1) {
+            --curline;
+        }
+        while(curline > -1) {
+            if(lines[curline].rfind(s) != std::string::npos) {
+                prevloc.back().first.first = lines[curline].rfind(s);
+                prevloc.back().second = curline;
+                return;
+            }
+            --curline;
+        }
+        curline = static_cast<int>(lines.size()) - 1;
+        while(curline != prevline) {
+            if(lines[curline].rfind(s) != std::string::npos) {
+                prevloc.back().first.first = lines[curline].rfind(s);
+                prevloc.back().second = curline;
+                cmdstr = "search hit TOP, continuing at BOTTOM";
+                return;
+            }
+            --curline;
+        }
+        if(!lines[curline].empty()) {
+            if((lines[curline].substr(prevloc.back().first.first + 1, lines[curline].size() - prevloc.back().first.first - 1)).find(s) != std::string::npos) {
+                prevloc.back().first.first = (lines[curline].substr(prevloc.back().first.first + 1, lines[curline].size() - prevloc.back().first.first - 1)).find(s);
+                cmdstr = "search hit TOP, continuing at BOTTOM";
+                return;
+            }
+        }
+        cmdstr = "E486: Pattern not found: " + s;
+    } 
+
     void botCommand(std::string cmd) {
         std::string c;
         if(cmd.size() > 1) c = cmd.substr(1, cmd.size() - 1);
-        if(cmd == ":wq") {
+        if (cmd.size() > 1 && cmd[0] == '/') {
+            forwardsearch(c);
+            for(int i = 1; i < repeats; ++i) {
+                returncursor();
+                savecursor();
+                forwardsearch(c);
+            }
+            if(cmdstr[0] == '/') {
+                cmdstr = "";
+            }
+            repeats = 0;
+        }
+        else if (cmd.size() > 1 && cmd[0] == '?'){
+            backwardsearch(c);
+            for(int i = 1; i < repeats; ++i) {
+                returncursor();
+                savecursor();
+                backwardsearch(c);
+            }
+            if(cmdstr[0] == '?') {
+                cmdstr = "";
+            }
+            repeats = 0;
+        }
+        else if(cmd == ":wq") {
             botinsert_mode = false;
             complete = true;
             cmdstr = "";
@@ -276,7 +380,11 @@ class Logic : public Model {
         }
         else {
             botinsert_mode = false;
+            if(cmdstr[0] == '/' || cmdstr[0] == '?') {
+                cmdstr = "E486: Pattern not found: " + c;
+            }
             cmdstr = "E492: Not an editor command: " + c;
+            
         }
     }
 
@@ -466,6 +574,7 @@ class Logic : public Model {
         cursor_y = prevloc.back().first.second;
         cursor_x = prevloc.back().first.first;
         int line = prevloc.back().second;
+        debug(cursor_y, offset, line);
         while (cursor_y + offset < line) {
             cursor_down();
         }
@@ -549,10 +658,12 @@ class Logic : public Model {
         undostack.pop_back();
     }
 
-    void debug() {
+    void debug(int i, int j, int k) {
         std::ofstream myfile;
         myfile.open("out.txt");
-        myfile << "true" << std::endl;
+        myfile << "true" << i << std::endl;
+        myfile << "true" << j << std::endl;
+        myfile << "true" << k << std::endl;
         myfile.close();
     }
 
@@ -711,7 +822,7 @@ class Logic : public Model {
             ch = cntrl->getAction()->getchar();
         } 
 
-        if (!cmdstr.empty() && cmdstr[0] == 'E') {
+        if (!cmdstr.empty() && (cmdstr[0] == 'E' || cmdstr[0] == 's')) {
             cmdstr = "";
         }
 
@@ -766,6 +877,7 @@ class Logic : public Model {
                 botCommand(cmdstr);
                 clearbottom(views[0]->getHeight());
                 returncursor();
+                botinsert_mode = false;
                 // if :r command we need to display file information
             } else if(cmdstr.size() == 1 && ch == KEY_BACKSPACE) { // backspace out of command
                 cmdstr = "";
@@ -788,6 +900,20 @@ class Logic : public Model {
         }
         else if(ch == ':') {
             cmdstr = ":";
+            savecursor();
+            cursor_y = views[0]->getHeight() + 1;
+            cursor_x = 1;
+            botinsert_mode = true;
+        }
+        else if(ch == '/') {
+            cmdstr = "/";
+            savecursor();
+            cursor_y = views[0]->getHeight() + 1;
+            cursor_x = 1;
+            botinsert_mode = true;
+        }
+        else if(ch == '?') {
+            cmdstr = "?";
             savecursor();
             cursor_y = views[0]->getHeight() + 1;
             cursor_x = 1;
