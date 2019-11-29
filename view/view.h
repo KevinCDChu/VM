@@ -153,10 +153,12 @@ class Bar : public View {
         clearbottom(height);
         move(height + 1, 0);
         if(cmdstr[0] == 'E') attron(COLOR_PAIR(2));
+        if(cmdstr[0] == 's') attron(COLOR_PAIR(11));
         printw(cmdstr);
         attroff(COLOR_PAIR(2));
+        attroff(COLOR_PAIR(11));
 
-        if (cmdstr == "" || cmdstr[0] != ':') {
+        if (cmdstr == "" || (cmdstr[0] != ':' && cmdstr[0] != '/' && cmdstr[0] != '?')) {
             move (height + 1, width - 4);
             if ((static_cast<int>(lines.size()) < height + 2) && (offset == 0)) {
                 printw("All");
