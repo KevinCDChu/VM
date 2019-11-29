@@ -922,6 +922,7 @@ class Logic : public Model {
             repeats = 0;
         }
         else if(ch == '$') {
+            int curline = offset + cursor_y;
             for(int i = 1; i < repeats; ++i) {
                 cursor_down();
             }
