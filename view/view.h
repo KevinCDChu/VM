@@ -66,7 +66,7 @@ class Window : public View {
             printw("\n");
         }
         attroff(COLOR_PAIR(1));
-        if(cmdstr != "-- INSERT --") move(adjusty(cursor_x, cursor_y, lines, offset), adjustx(cursor_x, cursor_y, lines, offset));
+        if(cmdstr != "-- INSERT --" && cmdstr != "-- REPLACE --") move(adjusty(cursor_x, cursor_y, lines, offset), adjustx(cursor_x, cursor_y, lines, offset));
         else move(adjusty(cursor_x, cursor_y, lines, offset), adjustxin(cursor_x, cursor_y, lines, offset));
         refresh();
     }

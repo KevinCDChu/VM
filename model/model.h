@@ -21,6 +21,7 @@ class Logic : public Model {
     bool complete = false;
     bool insert_mode = false; // True if insert mode, false if command mode
     bool botinsert_mode = false;
+    bool replace_mode = false; // will affect how backspace and adding characters work in insert mode
     bool filechange = false;
     std::string filename;
     std::vector<std::string> lines;
@@ -90,10 +91,20 @@ class Logic : public Model {
     void addCharacter(int ch) {
         int cur_line = cursor_y + offset;
         if((cursor_x == static_cast<int>(lines[cur_line].size())) && !lines[cur_line].empty()) { // insert mode at end of string
-            if(ch == KEY_BACKSPACE) { // delete last element
+            if(ch == KEY_BACKSPACE && !replace_mode) { // delete last element
                 lines[cur_line]  = lines[cur_line].substr(0, cursor_x - 1);
                 --cursor_x;
                 clearline();
+            } else if(ch == KEY_BACKSPACE && replace_mode) {
+                if((cur_line < static_cast<int>(comparable.size()) && cursor_x > static_cast<int>(comparable[cur_line].size())) || cur_line >= static_cast<int>(comparable.size())) { // do normal backspace in this case
+                    lines[cur_line] = lines[cur_line].substr(0, cursor_x - 1);
+                    --cursor_x;
+                    clearline();
+                } else { // decrement cursor and just add back character from 
+                    lines[cur_line][cursor_x] = comparable[cur_line][cursor_x];
+                    --cursor_x;
+                    clearline(); 
+                }
             } else if(ch == 10) {
                 lines.insert(lines.begin() + cur_line + 1, "");
                 cursor_x = 0;
@@ -124,7 +135,12 @@ class Logic : public Model {
         }
         else if(ch == KEY_BACKSPACE) { // Backspace key
             if(cursor_x == 0) {
-                if(cur_line) { 
+                if(replace_mode && cur_line) {
+                    --cursor_y;
+                    cursor_x = static_cast<int>(lines[cursor_y + offset].size());
+                    --backmovecount;
+                }
+                else if(cur_line) { 
                     cursor_x = static_cast<int>(lines[cur_line - 1].size());
                     lines[cur_line - 1] = lines[cur_line - 1].append(lines[cur_line]);
                     lines.erase(lines.begin() + cur_line);
@@ -135,10 +151,21 @@ class Logic : public Model {
                     --backmovecount;
                 }
             } else {
+                if(replace_mode) { // just add back charcter that was there
+                    if((cur_line < static_cast<int>(comparable.size()) && cursor_x >= static_cast<int>(comparable[cur_line].size())) || cur_line >= static_cast<int>(comparable.size())) { // do normal backspace in this case
+                    lines[cur_line] = lines[cur_line].substr(0, cursor_x - 1);
+                    --cursor_x;
+                    clearline();
+                    } else { // decrement cursor and just add back character from 
+                    lines[cur_line][cursor_x - 1] = comparable[cur_line][cursor_x - 1];
+                    --cursor_x;
+                    clearline(); 
+                }
+            } else {
                 lines[cur_line]  = lines[cur_line].substr(0, cursor_x - 1) + lines[cur_line].substr(cursor_x, static_cast<int>(lines[cur_line].size() - cursor_x));
                 --cursor_x;
                 clearline();
-            }
+            } }
         } else if(ch == 10) { // Enter key
             lines.insert(lines.begin() + cur_line + 1, lines[cur_line].substr(cursor_x, lines[cur_line].size() - cursor_x));
             lines[cur_line] = lines[cur_line].substr(0, cursor_x);
@@ -151,8 +178,14 @@ class Logic : public Model {
                 lines[cur_line] += ch;
                 cursor_x = 1;
             } else {
+                if(replace_mode) {
+                    if(cursor_x == static_cast<int>(lines[cur_line].size() - 1)) lines[cur_line][cursor_x] = ch;
+                    else lines[cur_line] = lines[cur_line].substr(0, cursor_x) + static_cast<char>(ch) + lines[cur_line].substr(cursor_x + 1, static_cast<int>(lines[cur_line].size() - cursor_x - 1));
+                    cursor_x += 1;
+                } else {
                 lines[cur_line] = lines[cur_line].substr(0,cursor_x) + static_cast<char>(ch) + lines[cur_line].substr(cursor_x, static_cast<int>(lines[cur_line].size()) - cursor_x);
                 ++cursor_x;
+                }
             }
         }
         if(cur_line || cursor_x || ch != KEY_BACKSPACE) filechange = true;
@@ -417,6 +450,7 @@ class Logic : public Model {
     void goinsert() {
         insert_mode = true;
         cmdstr = "-- INSERT --";
+        if(replace_mode) cmdstr = "-- REPLACE --";
         comparable = lines;
         backmovecount = 0;
     }
@@ -732,6 +766,7 @@ class Logic : public Model {
                 if(cursor_x != static_cast<int>(lines[cursor_y + offset].size())) cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size()) - 1, 0));
                 cursor_x = std::max(cursor_x - 1, 0);
                 insert_mode = false;
+                replace_mode = false;
                 comparesaves();
             }
             repeats = 0;
@@ -868,6 +903,11 @@ class Logic : public Model {
             } 
             comparesaves();
             repeats = 0;
+        }
+        else if(ch == 'R') {
+            replace_mode = true;
+            goinsert();
+            savecursor();
         }
         
     }
