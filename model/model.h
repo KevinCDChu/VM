@@ -592,7 +592,7 @@ class Logic : public Model {
         if(comparable.size() == lines.size()) {
             while(comparable[i] == lines[i]) {
                 if(i == mxs - 1) {
-                    return;
+                    //return; will delete this so that empty changes still are undoable
                 }
                 ++i;
             } 
