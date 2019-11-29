@@ -895,8 +895,10 @@ class Logic : public Model {
             savecursor();
         }
         else if(ch == '0') {
-            cursor_x = 0;
-            repeats = 0;
+            if(numcmd == "") {
+                cursor_x = 0;
+                repeats = 0;
+            }
         }
         else if(ch == '^') {
             cursor_x = 0;
