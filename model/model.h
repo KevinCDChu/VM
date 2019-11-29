@@ -909,8 +909,9 @@ class Logic : public Model {
                 }
                 for(int i = 0; i < repeats; ++i) {
                     lines[curline][j + i] = ch;
-                    cursor_right();
+                    if(i != 0) cursor_right();
                 }
+                repeats = 0;
                 comparesaves();
             }
         }
