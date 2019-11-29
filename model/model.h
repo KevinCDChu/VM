@@ -144,7 +144,6 @@ class Logic : public Model {
                     cursor_x = static_cast<int>(lines[cur_line - 1].size());
                     lines[cur_line - 1] = lines[cur_line - 1].append(lines[cur_line]);
                     lines.erase(lines.begin() + cur_line);
-                    debug();
                     if((cursor_y > 5 && offset != static_cast<int>(lines.size()) - views[0]->getHeight()) || offset == 0) --cursor_y;
                     else --offset;
                     clear();
@@ -553,21 +552,7 @@ class Logic : public Model {
     void debug() {
         std::ofstream myfile;
         myfile.open("out.txt");
-        // int start = undostack[undostack.size() - 1].first.first;
-        // int end = undostack[undostack.size() - 1].first.second;
-        // std::vector<std::string> change = undostack[undostack.size()-1].second;
-        myfile << offset << std::endl;
-        myfile << static_cast<int>(lines.size()) - 1 << std::endl;
-        myfile << views[0]->getHeight() << std::endl;
-        // myfile << start << " " << end << std::endl;
-        // for (int i = 0; i < static_cast<int>(change.size()) + start; ++i) {
-        //         if(i < start) {
-        //             myfile << lines[i] << std::endl;
-        //         }
-        //         else {
-        //             myfile << change[i-start] << std::endl;
-        //         }
-        //     }
+        myfile << "true" << std::endl;
         myfile.close();
     }
 
@@ -854,7 +839,7 @@ class Logic : public Model {
             savecursor();
         }
         else if(ch == 'b') {
-            cursor_x = std::min(cursor_x, static_cast<int>(lines[cursor_y + offset].size()) - 1);
+            cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size()) - 1, 0));
             wordback();
             for(int i = 1; i < repeats; ++i) {
                 wordback();
@@ -862,7 +847,7 @@ class Logic : public Model {
             repeats = 0;
         }
         else if(ch == 'w') {
-            cursor_x = std::min(cursor_x, static_cast<int>(lines[cursor_y + offset].size()) - 1);
+            cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size()) - 1, 0));
             wordforward();
             for(int i = 1; i < repeats; ++i) {
                 wordforward();
