@@ -735,9 +735,6 @@ class Logic : public Model {
     }
 
 
-
-
-
     void paste() {
         int cur_line = cursor_y + offset;
         int j = std::min(cursor_x, static_cast<int>(lines[cur_line].size()) - 1);
@@ -857,6 +854,9 @@ class Logic : public Model {
         } 
         else if(ch == 'r') {
             return true;
+        } 
+        else if(ch == 'd') {
+            return true;
         }
         return false;
     }
@@ -919,7 +919,7 @@ class Logic : public Model {
                 int j = std::min(cursor_x, std::max(0, static_cast<int>(lines[curline].size() - 1)));
                 savecursor();
                 comparable = lines;
-                if(j + repeats > end + 1 || ch == KEY_BACKSPACE || ch == KEY_DC) {
+                if(j + repeats > end + 1 || ch == KEY_BACKSPACE || ch == KEY_DC ||  ch == 27 || lines[cursor_y + offset] == "") {
                     returncursor();
                     repeats = 0;
                     return;
@@ -939,7 +939,129 @@ class Logic : public Model {
                 repeats = 0;
                 comparesaves();
             }
+            else if (cmd == 'd') {
+                numcmd = "";
+                if(num.empty()) repeats = 1;
+                if(ch == 'l') { // hardcode these in as they have weird behaviour at the end of lines
+                    interpret_input('x');
+                    return;
+                } else if(ch == 'h') {
+                    interpret_input('X');
+                    return;
+                }
+                cursor_x = std::min(cursor_x, std::max(0, static_cast<int>(lines[cursor_y + offset].size() - 1)));
+                int old_cursor_x = cursor_x;
+                int old_cursor_y = cursor_y;
+                int old_offset = offset;
+                comparable = lines;
+                savecursor();
+                std::string movement_command = "";
+                movement_command += static_cast<char>(ch);
+                interpret_input(ch);
+                // if(ch == 'j') {
+                //     cursor_x = 0; 
+                //     if(cursor_y + offset < static_cast<int>(lines.size() - 1)) ++cursor_y;
+                //     old_cursor_x = 0;
+                // }
+                // if(ch == 'k') {
+                //     cursor_x = 0;
+                //     if(cursor_y > 0) --cursor_y;
+                //     old_cursor_x = 0;
+                // }
+                bool moved_backwards = false;
+                bool inclusive_command = is_inclusive(ch);
+                cursor_x = std::min(cursor_x, std::max(0, static_cast<int>(lines[cursor_y + offset].size() - 1)));
+                if(cursor_y < old_cursor_y || (cursor_y == old_cursor_y && cursor_x < old_cursor_x)) moved_backwards = true;
+                delete_and_store(old_cursor_x, old_cursor_y, old_offset, inclusive_command, moved_backwards, ch);
+                if(!moved_backwards) {
+                    cursor_x = old_cursor_x;
+                    cursor_y = old_cursor_y;
+                    offset = old_offset;
+                }
+                if(moved_backwards) { // cursor should end in a slighly weird spot on the undo command
+                    prevloc.back().first.second = cursor_y;
+                    prevloc.back().first.first = cursor_x;
+                    prevloc.back().second = cursor_y + offset;
+                }
+                comparesaves();
+            }
         }
+    }
+
+    void delete_and_store(int old_cursor_x, int old_cursor_y, int old_offset, bool inclusive, bool moved_backwards, int ch) { // assume everything is exclusive (deletes newline)
+        buffer.clear();
+        backmovecount = 0;
+        if(old_cursor_y + old_offset == cursor_y + offset) {
+            if(inclusive && moved_backwards) {
+                old_cursor_x = std::min(old_cursor_x + 1, static_cast<int>(lines[old_cursor_y + old_offset].size() - 1));
+                //cursor_x = std::max(cursor_x - 1, 0);
+            } else if(inclusive && !moved_backwards) {
+                cursor_x = std::min(cursor_x + 1, static_cast<int>(lines[old_cursor_y + old_offset].size() - 1));
+            }
+            int x_start = std::min(old_cursor_x, cursor_x);
+            int x_end = std::max(old_cursor_x, cursor_x);
+            buffer.push_back(lines[old_cursor_y + old_offset].substr(x_start, x_end - x_start));
+            lines[old_cursor_y + old_offset] = lines[old_cursor_y + old_offset].substr(0, x_start) + lines[old_cursor_y + old_offset].substr(x_end, static_cast<int>(lines[old_cursor_y + old_offset].size()) - x_end);
+            return;
+        }
+        int x_start;
+        int x_end;
+        if(moved_backwards) {
+            x_start = 0;
+            x_end = old_cursor_x;
+        } else {
+            x_start = old_cursor_x;
+            x_end = static_cast<int>(lines[old_cursor_y].size() - 1);
+        }
+        buffer.push_back(lines[old_cursor_y + old_offset].substr(x_start, x_end - x_start));
+        if(moved_backwards) lines[old_cursor_y + old_offset] = lines[old_cursor_y + old_offset].substr(old_cursor_x, static_cast<int>(lines[old_cursor_y + old_offset].size() - old_cursor_x));
+        else lines[old_cursor_y + old_offset] = lines[old_cursor_y + old_offset].substr(0, old_cursor_x);        
+        int y_start;
+        int y_end;
+        if(moved_backwards) {
+            y_start = cursor_y + offset + 1;
+            y_end = old_cursor_y + old_offset;
+        } else {
+            y_end = cursor_y + offset;
+            y_start = old_cursor_y + old_offset + 1;
+        }
+        for(int i = y_start; i < y_end; ++i) { // delete lines
+            buffer.push_back(lines[i]);
+            lines.erase(lines.begin() + y_start); // delete the same line again as we just deleted the last one
+            if(moved_backwards) --backmovecount;
+        }
+        buffer.push_back("");
+        if(moved_backwards) {
+            x_start = cursor_x;
+            x_end = static_cast<int>(lines[y_start].size() - 1);
+        } else {
+            x_start = 0;
+            x_end = cursor_x;
+        }
+        if(moved_backwards) {
+            buffer[buffer.size() - 1] += lines[cursor_y + offset].substr(cursor_x, static_cast<int>(lines[cursor_y + offset].size()) - cursor_x);
+            lines[cursor_y + offset + 1] = lines[cursor_y + offset].substr(0, cursor_x) + lines[cursor_y + offset + 1];
+            lines.erase(lines.begin() + cursor_y + offset);
+             if(inclusive) {
+                 buffer[buffer.size() - 1] += lines[cursor_y + offset][lines[cursor_y + offset].size() - 1];
+                lines[cursor_y + offset] = lines[cursor_y + offset].substr(0, static_cast<int>(lines[cursor_y + offset].size() - 1));
+            }
+        } else {
+            buffer[buffer.size() - 1] += lines[old_cursor_y + old_offset + 1].substr(0, cursor_x);
+            lines[old_cursor_y + old_offset] += lines[old_cursor_y + old_offset + 1].substr(cursor_x, static_cast<int>(lines[old_cursor_y + old_offset + 1].size() - cursor_x));
+            lines.erase(lines.begin() + old_cursor_y + old_offset + 1);
+            if(inclusive) {
+                buffer[buffer.size() - 1] += lines[old_cursor_y + old_offset][lines[old_cursor_y + old_offset].size() - 1];
+                lines[old_cursor_y + old_offset] = lines[old_cursor_y + old_offset].substr(0, static_cast<int>(lines[old_cursor_y + old_offset].size() - 1));
+            }
+        }
+    }
+
+
+
+
+    void do_command_sequence(std::string str) {
+        for(auto &i : str) interpret_input(i);
     }
 
     void interpret_input(int ch = 0) { // make it possible to do command not from keyboard
@@ -960,7 +1082,7 @@ class Logic : public Model {
         }
         else {
             if(containsletter(numcmd)) {
-                reformat_command(numcmd); // needed in case of double multipliers (like 3d4l)
+                if(movement_command(ch)) reformat_command(numcmd); // needed in case of double multipliers (like 3d4l)
                 interpret_showcmd(numcmd.substr(0, numcmd.size()-1), numcmd[numcmd.size()-1], ch);
                 numcmd = "";
                 return;
@@ -973,7 +1095,6 @@ class Logic : public Model {
                 numcmd = "";
             }
             numcmd = "";
-            
         }
 
         if(ch == 27) { // escape key
@@ -1194,6 +1315,7 @@ class Logic : public Model {
             for(int i = 1; i < repeats; ++i) {
                 cursor_down();
             }
+            curline = offset + cursor_y;
             cursor_x = std::max(static_cast<int>(lines[curline].size()) - 1, 0);
         }
         else if(ch == '%') {
@@ -1204,6 +1326,9 @@ class Logic : public Model {
             get_bracket_pairs(parentheses, brackets, braces);
             int cur_line = cursor_y + offset;
             move_cursor_to_best_pair(parentheses, brackets, braces, cur_line);
+        }
+        else if(ch == '@') {
+            do_command_sequence("ppp");
         }
 
     }
