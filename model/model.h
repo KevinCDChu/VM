@@ -2,8 +2,10 @@
 #define MODEL_H
 #include "../view/view.h"
 #include "../controller/controller.h"
+#include "undo.h"
 #include <string>
 #include <vector>
+
 
 class Model {
   public:
@@ -35,7 +37,7 @@ class Logic : public Model {
     int cursor_y = 0;
     int linechangeamount = -1;
     std::vector<std::pair <std::pair<int, int>, int>> prevloc;
-    std::vector<std::pair<std::pair <int, int>, std::vector<std::string>>> undostack; 
+    std::vector<Undo> undostack; 
     std::vector<std::string> comparable;
     std::string prevpattern = "";
     std::pair<int, int> prevchar;
@@ -593,9 +595,9 @@ class Logic : public Model {
 
     void comparesaves() { 
         int mxs = std::min(static_cast<int>(comparable.size()), static_cast<int>(lines.size()));
-        std::pair<std::pair<int, int>, std::vector<std::string>> save;
         int linestart = std::max(prevloc.back().second + backmovecount, 0);
         int i = linestart;
+        Undo save;
         if(comparable.size() == lines.size()) {
             while(comparable[i] == lines[i]) {
                 if(i == mxs - 1) {
@@ -610,18 +612,13 @@ class Logic : public Model {
                 ++i;
             } 
         }
-        save.first.first = i;
+        save.setStart(i);
         while (i < mxs) {
-            if(comparable[i] != lines[i]) {
-                save.first.second = i;
-            }
-            save.second.push_back(comparable[i]);
+            save.pushChange(comparable[i]);
             ++i;
         }
-        // if comparable is longer
         while (i < static_cast<int>(comparable.size())) {
-            save.first.second = i;
-            save.second.push_back(comparable[i]);
+            save.pushChange(comparable[i]);
             ++i;
         }
         undostack.push_back(save);
@@ -766,9 +763,8 @@ class Logic : public Model {
     }
 
     void undo() {
-        int start = undostack[undostack.size()-1].first.first;
-        //int end = undostack[undostack.size()-1].first.second;
-        std::vector<std::string> change = undostack[undostack.size()-1].second;
+        int start = undostack.back().getStart();
+        std::vector<std::string> change = undostack.back().getChange();
         std::vector<std::string> tmp;
         for (int i = 0; i < static_cast<int>(change.size()) + start; ++i) {
             if(i < start) {
