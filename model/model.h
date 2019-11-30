@@ -860,7 +860,9 @@ class Logic : public Model {
             offset = std::min(offset, maxoff);
             cursor_y = std::min(cursor_y, views[0]->getHeight());
         }
-        cursor_y = std::max(5, cursor_y);
+        if(offset < maxoff) {
+            cursor_y = std::max(5, cursor_y);
+        }
         cursor_x = 0;
         while(cursor_x < static_cast<int>(lines[cursor_y+offset].size()) && isspace(lines[cursor_y+offset][cursor_x])) {
             ++cursor_x;
@@ -873,11 +875,13 @@ class Logic : public Model {
     void lineup(int x) {
         offset -= x;
         if(offset < 0) {
-            cursor_y += 0 - offset;
+            cursor_y -= 0 - offset;
             offset = std::max(offset, 0);
             cursor_y = std::max(cursor_y, 0);
         }
-        cursor_y = std::min(cursor_y, std::max(views[0]->getHeight() - 5, 0));
+        if(offset > 0) {
+            cursor_y = std::min(cursor_y, std::max(views[0]->getHeight() - 5, 0));
+        }
         cursor_x = 0;
         while(cursor_x < static_cast<int>(lines[cursor_y+offset].size()) && isspace(lines[cursor_y+offset][cursor_x])) {
             ++cursor_x;
