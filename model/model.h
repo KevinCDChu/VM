@@ -33,6 +33,7 @@ class Logic : public Model {
     int offset = 0;
     int cursor_x = 0;
     int cursor_y = 0;
+    int linechangeamount = -1;
     std::vector<std::pair <std::pair<int, int>, int>> prevloc;
     std::vector<std::pair<std::pair <int, int>, std::vector<std::string>>> undostack; 
     std::vector<std::string> comparable;
@@ -862,6 +863,45 @@ class Logic : public Model {
         }
     }
 
+    void linedown(int x) {
+        offset += x;
+        int maxoff = std::max(static_cast<int>(lines.size()) - views[0]->getHeight() - 1, 0);
+        if(offset > maxoff) {
+            cursor_y += offset - maxoff;
+            offset = std::min(offset, maxoff);
+            cursor_y = std::min(cursor_y, views[0]->getHeight());
+        }
+        if(offset < maxoff) {
+            cursor_y = std::max(5, cursor_y);
+        }
+        cursor_x = 0;
+        while(cursor_x < static_cast<int>(lines[cursor_y+offset].size()) && isspace(lines[cursor_y+offset][cursor_x])) {
+            ++cursor_x;
+        }
+        if(cursor_x == static_cast<int>(lines[cursor_y+offset].size())) {
+            cursor_x = 0;
+        }
+    }
+
+    void lineup(int x) {
+        offset -= x;
+        if(offset < 0) {
+            cursor_y -= 0 - offset;
+            offset = std::max(offset, 0);
+            cursor_y = std::max(cursor_y, 0);
+        }
+        if(offset > 0) {
+            cursor_y = std::min(cursor_y, std::max(views[0]->getHeight() - 5, 0));
+        }
+        cursor_x = 0;
+        while(cursor_x < static_cast<int>(lines[cursor_y+offset].size()) && isspace(lines[cursor_y+offset][cursor_x])) {
+            ++cursor_x;
+        }
+        if(cursor_x == static_cast<int>(lines[cursor_y+offset].size())) {
+            cursor_x = 0;
+        }
+    }
+
     bool cmdf(int curline, int end, int ch) {
         if (cursor_x != end) {
             if (lines[curline].find(ch, cursor_x + 1) != std::string::npos) {
@@ -1500,8 +1540,25 @@ class Logic : public Model {
             cmdstr = "\"" + filename + "\" " + (filechange ? "[Modified] " : "") + std::to_string(lines.size()) + " lines " + percs;
             repeats = 0;
         }
-        else {
-            debug(ch, 0, 0);
+        else if(ch == 4) { // ^d
+            if(linechangeamount == -1) {
+                linechangeamount = views[0]->getHeight()/2;
+            }
+            if(repeats != 0) {
+                linechangeamount = repeats;
+            }
+            linedown(linechangeamount);
+            repeats = 0;
+        }
+        else if(ch == 21) { // ^u
+            if(linechangeamount == -1) {
+                linechangeamount = views[0]->getHeight()/2;
+            }
+            if(repeats != 0) {
+                linechangeamount = repeats;
+            }
+            lineup(linechangeamount);
+            repeats = 0;
         }
     }
 };
