@@ -1444,19 +1444,28 @@ class Logic : public Model {
                 return;
             }
         }
-        else if(ch == 6) {
+        else if(ch == 6) { // ^f
             pagedown();
             for(int i = 1; i < repeats; ++i) {
                 pagedown();
             } 
             repeats = 0;
         }
-        else if(ch == 2) {
+        else if(ch == 2) { // ^b
             pageup();
             for(int i = 1; i < repeats; ++i) {
                 pageup();
             } 
             repeats = 0;
+        }
+        else if(ch == 7) { // ^g
+            int perc = (100*(offset + cursor_y + 1))/(static_cast<int>(lines.size()));
+            std::string percs = "--" + std::to_string(perc) + "%%--";
+            cmdstr = "\"" + filename + "\" " + (filechange ? "[Modified] " : "") + std::to_string(lines.size()) + " lines " + percs;
+            repeats = 0;
+        }
+        else {
+            debug(ch, 0, 0);
         }
     }
 };
