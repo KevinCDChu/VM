@@ -95,6 +95,8 @@ std::regex init_keywords() {
     str += "[^a-zA-Z0-9:]for( )*\\(?|^for( )*\\(?|";
     str += "[^a-zA-Z0-9:]while( )*\\(?|^while( )*\\(?|";
     str += "[^a-zA-Z0-9:]else( )*\\(?|^else( )*\\(?|";
+    str += "[^a-zA-Z0-9:]this( )*\\(?|^this( )*\\(?|";
+    str += "[^a-zA-Z0-9:]and( )*\\(?|^and( )*\\(?|";
     str += " new |";
     str += "[^a-zA-Z0-9:]public|";
     str += "[^a-zA-Z0-9:]protected|";

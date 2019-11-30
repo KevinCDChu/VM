@@ -27,8 +27,8 @@ bool is_inclusive(int ch) {
     return (ch == '$' || ch == 'f' || ch == '%');
 }
 
-bool delete_end_line(int ch) {
-    return true;
+bool is_linewise(int ch) {
+    return (ch == 'j' || ch == 'k');
 }
 
 bool isnum(const std::string& s)
