@@ -41,6 +41,7 @@ class Logic : public Model {
     int backmovecount = 0;
     std::vector<std::string> entire_file_buffer;
     bool insert_did_something = false; // true if insert actually did something
+    std::vector<size_t> double_undo_indices;
 
 
     void addView(View *v) override {
@@ -807,9 +808,19 @@ class Logic : public Model {
     void undocommand() {
         if (!undostack.empty()) {
             undo();
+            int temp_cursor_y = prevloc.back().first.second;
+            int temp_cursor_x = prevloc.back().first.first;
+            int temp_line = prevloc.back().second;
             returncursor();
             if(undostack.empty()) {
                 filechange = false;
+            }
+            if(!double_undo_indices.empty() && double_undo_indices.back() == undostack.size()) {
+                double_undo_indices.pop_back();
+                prevloc.back().first.second = temp_cursor_y;
+                prevloc.back().first.first = temp_cursor_x;
+                prevloc.back().second = temp_line;
+                undocommand();
             }
         }
         else {
@@ -898,6 +909,12 @@ class Logic : public Model {
             return true;
         } 
         else if(ch == 'd') {
+            return true;
+        }
+        else if(ch == 'c') {
+            return true;
+        }
+        else if(ch == 'y') {
             return true;
         }
         return false;
@@ -990,17 +1007,9 @@ class Logic : public Model {
                 repeats = 0;
                 comparesaves();
             }
-            else if (cmd == 'd') {
+            else if (cmd == 'd' || cmd == 'c' || cmd == 'y') {
                 numcmd = "";
                 if(num.empty()) repeats = 1;
-                if(ch == 'f') {
-                    numcmd = "f";
-                    displayViews();
-                    int last_input = 0;
-                    last_input = getch();
-                    interpret_input(last_input);
-                    displayViews();
-                }
                 if(ch == 'l') { // hardcode these in as they have weird behaviour at the end of lines
                     interpret_input('x');
                     return;
@@ -1016,7 +1025,7 @@ class Logic : public Model {
                 savecursor();
                 std::string movement_command = "";
                 movement_command += static_cast<char>(ch);
-                interpret_input(ch);
+                if(ch != cmd) interpret_input(ch);
                 if(ch == ':' || ch == '/') { // interpret the command if it is a colon command
                     displayViews();
                     int last_input = 0;
@@ -1026,6 +1035,14 @@ class Logic : public Model {
                         displayViews();
                     }
                 }
+                if(ch == 'f') {
+                    numcmd = "f";
+                    displayViews();
+                    int last_input = 0;
+                    last_input = getch();
+                    interpret_input(last_input);
+                    displayViews();
+                }
                 if(ch == 'j') {
                     cursor_x = static_cast<int>(lines[cursor_y + offset].size());
                     old_cursor_x = 0;   
@@ -1034,12 +1051,17 @@ class Logic : public Model {
                     old_cursor_x = static_cast<int>(lines[old_cursor_y + old_offset].size());
                     cursor_x = 0; 
                 }
+                if(ch == cmd) {
+                    old_cursor_x = 0;
+                    cursor_x = static_cast<int>(lines[old_cursor_y + old_offset].size());
+                }
                 bool moved_backwards = false;
                 bool inclusive_command = is_inclusive(ch);
+                if(ch == cmd) inclusive_command = true;
                 if(cursor_y + offset == old_cursor_y + old_offset && cursor_x == old_cursor_x && !inclusive_command) return;
                 cursor_x = std::min(cursor_x, std::max(0, static_cast<int>(lines[cursor_y + offset].size() - 1)));
                 if(cursor_y < old_cursor_y || (cursor_y == old_cursor_y && cursor_x < old_cursor_x)) moved_backwards = true;
-                delete_and_store(old_cursor_x, old_cursor_y, old_offset, inclusive_command, moved_backwards, ch);
+                delete_and_store(old_cursor_x, old_cursor_y, old_offset, inclusive_command, moved_backwards, ch, cmd);
                 if(!moved_backwards) {
                     cursor_x = old_cursor_x;
                     cursor_y = old_cursor_y;
@@ -1051,12 +1073,20 @@ class Logic : public Model {
                     prevloc.back().second = cursor_y + offset;
                 }
                 repeats = 0;
+                if(cmd == ch) {
+                    buffer.insert(buffer.begin(), "");
+                }
                 comparesaves();
+                if(cmd == 'c') {
+                    double_undo_indices.push_back(undostack.size());
+                    goinsert();
+                }
+                if(cmd == 'y') interpret_input('u'); // undo all the changes
             }
         }
     }
 
-    void delete_and_store(int old_cursor_x, int old_cursor_y, int old_offset, bool inclusive, bool moved_backwards, int ch) { // assume everything is exclusive (deletes newline)
+    void delete_and_store(int old_cursor_x, int old_cursor_y, int old_offset, bool inclusive, bool moved_backwards, int ch, int cmd) { // assume everything is exclusive (deletes newline)
         buffer.clear();
         backmovecount = 0;
         if(old_cursor_y + old_offset == cursor_y + offset) {
@@ -1070,6 +1100,7 @@ class Logic : public Model {
             int x_end = std::max(old_cursor_x, cursor_x);
             buffer.push_back(lines[old_cursor_y + old_offset].substr(x_start, x_end - x_start));
             lines[old_cursor_y + old_offset] = lines[old_cursor_y + old_offset].substr(0, x_start) + lines[old_cursor_y + old_offset].substr(x_end, static_cast<int>(lines[old_cursor_y + old_offset].size()) - x_end);
+            if(ch == cmd && cmd == 'd') lines.erase(lines.begin() + old_cursor_y + old_offset); // erase line if dd/cc/yy
             return;
         }
         int x_start;
