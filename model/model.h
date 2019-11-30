@@ -1511,6 +1511,37 @@ class Logic : public Model {
                 prevpattern = tmp;
             }
         }
+        else if(ch == 'J') {
+            if(cursor_y + offset >= static_cast<int>(lines.size() - 1)) return;
+            comparable = lines;
+            savecursor();
+            if(lines[cursor_y + offset] == "") lines.erase(lines.begin() + cursor_y + offset);
+            else lines[cursor_y + offset] += " ";
+            int move_to = static_cast<int>(lines[cursor_y + offset].size() - 1);
+            cursor_x = 0;
+            while(cursor_x < static_cast<int>(lines[cursor_y+offset + 1].size()) && isspace(lines[cursor_y+offset + 1][cursor_x])) {
+                ++cursor_x;
+            }
+            lines[cursor_y + offset] += lines[cursor_y + offset + 1].substr(cursor_x, static_cast<int>(lines[cursor_y + offset + 1].size()) - cursor_x);
+            lines.erase(lines.begin() + cursor_y + offset + 1);
+            repeats -= 1;
+            cursor_x = move_to;
+            for(int i = 1; i < repeats; ++i) {
+                if(cursor_y + offset >= static_cast<int>(lines.size() - 1)) return;
+                if(lines[cursor_y + offset] == "") lines.erase(lines.begin() + cursor_y + offset);
+                else lines[cursor_y + offset] += " ";
+                int move_to = static_cast<int>(lines[cursor_y + offset].size() - 1);
+                cursor_x = 0;
+                while(cursor_x < static_cast<int>(lines[cursor_y+offset + 1].size()) && isspace(lines[cursor_y+offset + 1][cursor_x])) {
+                    ++cursor_x;
+                }
+                lines[cursor_y + offset] += lines[cursor_y + offset + 1].substr(cursor_x, static_cast<int>(lines[cursor_y + offset + 1].size()) - cursor_x);
+                lines.erase(lines.begin() + cursor_y + offset + 1);
+                cursor_x = move_to;
+            }
+            comparesaves();
+            repeats = 0;
+        }
         else if(ch == ';') {
             if(prevchar.first != 0) {
                 numcmd += prevchar.first;
