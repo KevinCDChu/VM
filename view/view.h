@@ -167,7 +167,7 @@ class Bar : public View {
                 if (offset == 0) {
                     printw("Top");
                 }
-                else if ((static_cast<int>(lines.size()) - height - 1) == offset) {
+                else if ((static_cast<int>(lines.size()) - height - 1) <= offset) {
                     printw("Bot");
                 }
                 else {

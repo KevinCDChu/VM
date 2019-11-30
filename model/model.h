@@ -36,9 +36,12 @@ class Logic : public Model {
     std::vector<std::pair <std::pair<int, int>, int>> prevloc;
     std::vector<std::pair<std::pair <int, int>, std::vector<std::string>>> undostack; 
     std::vector<std::string> comparable;
+    std::string prevpattern = "";
+    std::pair<int, int> prevchar;
     int backmovecount = 0;
     std::vector<std::string> entire_file_buffer;
     bool insert_did_something = false; // true if insert actually did something
+
 
     void addView(View *v) override {
         views.push_back(v);
@@ -246,7 +249,7 @@ class Logic : public Model {
        int curline = prevloc.back().first.second + offset;
         int prevline = curline;
         if(!lines[curline].empty()) {
-            if(lines[curline].rfind(s, prevloc.back().first.first - 1) != std::string::npos) {
+            if(prevloc.back().first.first != 0 && lines[curline].rfind(s, prevloc.back().first.first - 1) != std::string::npos) {
                 prevloc.back().first.first = lines[curline].rfind(s, prevloc.back().first.first - 1);
                 return;
             }
@@ -295,6 +298,7 @@ class Logic : public Model {
             if(cmdstr[0] == '/') {
                 cmdstr = "";
             }
+            prevpattern = cmd;
             repeats = 0;
         }
         else if (cmd.size() > 1 && cmd[0] == '?'){
@@ -307,6 +311,7 @@ class Logic : public Model {
             if(cmdstr[0] == '?') {
                 cmdstr = "";
             }
+            prevpattern = cmd;
             repeats = 0;
         }
         else if(cmd == ":wq") {
@@ -575,7 +580,6 @@ class Logic : public Model {
         cursor_y = prevloc.back().first.second;
         cursor_x = prevloc.back().first.first;
         int line = prevloc.back().second;
-        debug(cursor_y, offset, line);
         while (cursor_y + offset < line) {
             cursor_down();
         }
@@ -809,6 +813,40 @@ class Logic : public Model {
         }
     }
 
+    void pagedown() {
+        offset += views[0]->getHeight() - 1;
+        offset = std::min(offset, std::max(0, static_cast<int>(lines.size()) - 6));
+        cursor_y = 5;
+        cursor_x = 0;
+        while(cursor_x < static_cast<int>(lines[cursor_y+offset].size()) && isspace(lines[cursor_y+offset][cursor_x])) {
+            ++cursor_x;
+        }
+        if(cursor_x == static_cast<int>(lines[cursor_y+offset].size())) {
+            cursor_x = 0;
+        }
+    }
+
+    void pageup() {
+        if(offset != 0) {
+            if(offset + 1 < std::max(views[0]->getHeight() - 5, 0)) {
+                cursor_y = offset + 1;
+                offset = 0;
+            }
+            else {
+                offset -= views[0]->getHeight() - 1;
+                offset = std::max(offset, 0);
+                cursor_y = std::max(views[0]->getHeight() - 5, 0);
+            }
+            cursor_x = 0;
+            while(cursor_x < static_cast<int>(lines[cursor_y+offset].size()) && isspace(lines[cursor_y+offset][cursor_x])) {
+                ++cursor_x;
+            }
+            if(cursor_x == static_cast<int>(lines[cursor_y+offset].size())) {
+                cursor_x = 0;
+            }
+        }
+    }
+
     bool cmdf(int curline, int end, int ch) {
         if (cursor_x != end) {
             if (lines[curline].find(ch, cursor_x + 1) != std::string::npos) {
@@ -870,6 +908,8 @@ class Logic : public Model {
             int end = std::max(static_cast<int>(lines[curline].size()) - 1, 0);
             if (cmd == 'f') {
                 savecursor();
+                prevchar.first = 'f';
+                prevchar.second = ch;
                 if(!cmdf(curline, end, ch)) {
                     returncursor();
                     repeats = 0;
@@ -881,10 +921,13 @@ class Logic : public Model {
                         repeats = 0;
                         return;
                     }
-                }    
+                }
+                repeats = 0;    
             }
             else if (cmd == 'F') {
                 savecursor();
+                prevchar.first = 'F';
+                prevchar.second = ch;
                 if(!cmdF(curline, end, ch)) {
                     returncursor();
                     repeats = 0;
@@ -897,9 +940,12 @@ class Logic : public Model {
                         return;
                     }
                 }
+                repeats = 0;
             }
             else if (cmd == 't') {
                 savecursor();
+                prevchar.first = 't';
+                prevchar.second = ch;
                 if(!cmdt(curline, end, ch)) {
                     returncursor();
                     repeats = 0;
@@ -913,6 +959,7 @@ class Logic : public Model {
                         return;
                     }
                 }
+                repeats = 0;
             }
             else if (cmd == 'r') {
                 if(num.empty()) repeats = 1;
@@ -1336,10 +1383,57 @@ class Logic : public Model {
             int cur_line = cursor_y + offset;
             move_cursor_to_best_pair(parentheses, brackets, braces, cur_line);
         }
-        else if(ch == '@') {
-            do_command_sequence("ppp");
+        else if(ch == 'n') {
+            if(!prevpattern.empty()) {
+                std::string tmp = prevpattern;
+                cmdstr = prevpattern;
+                savecursor();
+                botCommand(cmdstr);
+                clearbottom(views[0]->getHeight());
+                returncursor();
+                prevpattern = tmp;
+            }
         }
-
+        else if(ch == 'N') {
+            if(!prevpattern.empty()) {
+                std::string tmp = prevpattern;
+                cmdstr = prevpattern;
+                if(cmdstr[0] == '/') {
+                    cmdstr[0] = '?';
+                }
+                else if(cmdstr[0] == '?') {
+                    cmdstr[0] = '/';
+                }
+                savecursor();
+                botCommand(cmdstr);
+                clearbottom(views[0]->getHeight());
+                returncursor();
+                prevpattern = tmp;
+            }
+        }
+        else if(ch == ';') {
+            if(prevchar.first != 0) {
+                numcmd += prevchar.first;
+                reformat_command(numcmd);
+                interpret_showcmd(numcmd.substr(0, numcmd.size()-1), numcmd[numcmd.size()-1], prevchar.second);
+                numcmd = "";
+                return;
+            }
+        }
+        else if(ch == 6) {
+            pagedown();
+            for(int i = 1; i < repeats; ++i) {
+                pagedown();
+            } 
+            repeats = 0;
+        }
+        else if(ch == 2) {
+            pageup();
+            for(int i = 1; i < repeats; ++i) {
+                pageup();
+            } 
+            repeats = 0;
+        }
     }
 };
 
