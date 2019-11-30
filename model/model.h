@@ -816,6 +816,40 @@ class Logic : public Model {
         }
     }
 
+    void pagedown() {
+        offset += views[0]->getHeight() - 1;
+        offset = std::min(offset, std::max(0, static_cast<int>(lines.size()) - 6));
+        cursor_y = 5;
+        cursor_x = 0;
+        while(cursor_x < static_cast<int>(lines[cursor_y+offset].size()) && isspace(lines[cursor_y+offset][cursor_x])) {
+            ++cursor_x;
+        }
+        if(cursor_x == static_cast<int>(lines[cursor_y+offset].size())) {
+            cursor_x = 0;
+        }
+    }
+
+    void pageup() {
+        if(offset != 0) {
+            if(offset + 1 < std::max(views[0]->getHeight() - 5, 0)) {
+                cursor_y = offset + 1;
+                offset = 0;
+            }
+            else {
+                offset -= views[0]->getHeight() - 1;
+                offset = std::max(offset, 0);
+                cursor_y = std::max(views[0]->getHeight() - 5, 0);
+            }
+            cursor_x = 0;
+            while(cursor_x < static_cast<int>(lines[cursor_y+offset].size()) && isspace(lines[cursor_y+offset][cursor_x])) {
+                ++cursor_x;
+            }
+            if(cursor_x == static_cast<int>(lines[cursor_y+offset].size())) {
+                cursor_x = 0;
+            }
+        }
+    }
+
     bool cmdf(int curline, int end, int ch) {
         if (cursor_x != end) {
             if (lines[curline].find(ch, cursor_x + 1) != std::string::npos) {
@@ -1254,6 +1288,20 @@ class Logic : public Model {
                 numcmd = "";
                 return;
             }
+        }
+        else if(ch == 6) {
+            pagedown();
+            for(int i = 1; i < repeats; ++i) {
+                pagedown();
+            } 
+            repeats = 0;
+        }
+        else if(ch == 2) {
+            pageup();
+            for(int i = 1; i < repeats; ++i) {
+                pageup();
+            } 
+            repeats = 0;
         }
     }
 };
