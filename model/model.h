@@ -958,6 +958,15 @@ class Logic : public Model {
                 std::string movement_command = "";
                 movement_command += static_cast<char>(ch);
                 interpret_input(ch);
+                if(ch == ':') { // interpret the command if it is a colon command
+                    displayViews();
+                    int last_input = 0;
+                    while(last_input != 10) {
+                        last_input = getch();
+                        interpret_input(last_input);
+                        displayViews();
+                    }
+                }
                 // if(ch == 'j') {
                 //     cursor_x = 0; 
                 //     if(cursor_y + offset < static_cast<int>(lines.size() - 1)) ++cursor_y;
