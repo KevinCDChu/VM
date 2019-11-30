@@ -743,6 +743,7 @@ class Logic : public Model {
         int cur_line = cursor_y + offset;
         int j = std::min(cursor_x, static_cast<int>(lines[cur_line].size()) - 1);
         std::string last_part;
+        bool was_empty_start = lines[cur_line] == "";
         if(lines[cur_line] != "" && j != static_cast<int>(lines[cur_line].size() - 1)) {
                 last_part = lines[cur_line].substr(j + 1, lines[cur_line].size() - j - 1);
                 lines[cur_line] = lines[cur_line].substr(0, j + 1) + buffer[0];
@@ -755,8 +756,11 @@ class Logic : public Model {
         lines[cur_line + buffer.size() - 1] += last_part;
         if(buffer.size() == 1) {
             cursor_x += static_cast<int>(buffer[0].size());
-            //cursor_x = std::min(cursor_x, static_cast<int>(lines[cur_line].size()) - 1);
-        } 
+        } else if(was_empty_start) {
+            cursor_x = 0; // behaviour that vim does - cursor ends at start of line for multiline empty start paste
+        } else {
+            ++cursor_x;
+        }
     }
 
     void undo() {
@@ -1005,7 +1009,7 @@ class Logic : public Model {
                 std::string movement_command = "";
                 movement_command += static_cast<char>(ch);
                 interpret_input(ch);
-                if(ch == ':') { // interpret the command if it is a colon command
+                if(ch == ':' || ch == '/') { // interpret the command if it is a colon command
                     displayViews();
                     int last_input = 0;
                     while(last_input != 10) {
@@ -1014,18 +1018,20 @@ class Logic : public Model {
                         displayViews();
                     }
                 }
-                // if(ch == 'j') {
-                //     cursor_x = 0; 
-                //     if(cursor_y + offset < static_cast<int>(lines.size() - 1)) ++cursor_y;
-                //     old_cursor_x = 0;
-                // }
-                // if(ch == 'k') {
-                //     cursor_x = 0;
-                //     if(cursor_y > 0) --cursor_y;
-                //     old_cursor_x = 0;
-                // }
+                if(ch == 'f') {
+                    
+                }
+                if(ch == 'j') {
+                    cursor_x = static_cast<int>(lines[cursor_y + offset].size());
+                    old_cursor_x = 0;   
+                }
+                if(ch == 'k') {
+                    old_cursor_x = static_cast<int>(lines[old_cursor_y + old_offset].size());
+                    cursor_x = 0; 
+                }
                 bool moved_backwards = false;
                 bool inclusive_command = is_inclusive(ch);
+                if(cursor_y + offset == old_cursor_y + old_offset && cursor_x == old_cursor_x && !inclusive_command) return;
                 cursor_x = std::min(cursor_x, std::max(0, static_cast<int>(lines[cursor_y + offset].size() - 1)));
                 if(cursor_y < old_cursor_y || (cursor_y == old_cursor_y && cursor_x < old_cursor_x)) moved_backwards = true;
                 delete_and_store(old_cursor_x, old_cursor_y, old_offset, inclusive_command, moved_backwards, ch);
@@ -1039,6 +1045,7 @@ class Logic : public Model {
                     prevloc.back().first.first = cursor_x;
                     prevloc.back().second = cursor_y + offset;
                 }
+                repeats = 0;
                 comparesaves();
             }
         }
@@ -1052,7 +1059,7 @@ class Logic : public Model {
                 old_cursor_x = std::min(old_cursor_x + 1, static_cast<int>(lines[old_cursor_y + old_offset].size() - 1));
                 //cursor_x = std::max(cursor_x - 1, 0);
             } else if(inclusive && !moved_backwards) {
-                cursor_x = std::min(cursor_x + 1, static_cast<int>(lines[old_cursor_y + old_offset].size() - 1));
+                cursor_x = std::min(cursor_x + 1, static_cast<int>(lines[old_cursor_y + old_offset].size()));
             }
             int x_start = std::min(old_cursor_x, cursor_x);
             int x_end = std::max(old_cursor_x, cursor_x);
@@ -1067,8 +1074,9 @@ class Logic : public Model {
             x_end = old_cursor_x;
         } else {
             x_start = old_cursor_x;
-            x_end = static_cast<int>(lines[old_cursor_y].size() - 1);
+            x_end = static_cast<int>(lines[old_cursor_y].size());
         }
+        std::string thing_to_push_back = lines[old_cursor_y + old_offset].substr(0, old_cursor_x + 1);
         buffer.push_back(lines[old_cursor_y + old_offset].substr(x_start, x_end - x_start));
         if(moved_backwards) lines[old_cursor_y + old_offset] = lines[old_cursor_y + old_offset].substr(old_cursor_x, static_cast<int>(lines[old_cursor_y + old_offset].size() - old_cursor_x));
         else lines[old_cursor_y + old_offset] = lines[old_cursor_y + old_offset].substr(0, old_cursor_x);        
@@ -1082,7 +1090,7 @@ class Logic : public Model {
             y_start = old_cursor_y + old_offset + 1;
         }
         for(int i = y_start; i < y_end; ++i) { // delete lines
-            buffer.push_back(lines[i]);
+            buffer.push_back(lines[y_start]);
             lines.erase(lines.begin() + y_start); // delete the same line again as we just deleted the last one
             if(moved_backwards) --backmovecount;
         }
@@ -1094,22 +1102,38 @@ class Logic : public Model {
             x_start = 0;
             x_end = cursor_x;
         }
+        int size_of_line_before;
         if(moved_backwards) {
+            size_of_line_before = lines[cursor_y + offset].size();
             buffer[buffer.size() - 1] += lines[cursor_y + offset].substr(cursor_x, static_cast<int>(lines[cursor_y + offset].size()) - cursor_x);
             lines[cursor_y + offset + 1] = lines[cursor_y + offset].substr(0, cursor_x) + lines[cursor_y + offset + 1];
             lines.erase(lines.begin() + cursor_y + offset);
-             if(inclusive) {
-                 buffer[buffer.size() - 1] += lines[cursor_y + offset][lines[cursor_y + offset].size() - 1];
-                lines[cursor_y + offset] = lines[cursor_y + offset].substr(0, static_cast<int>(lines[cursor_y + offset].size() - 1));
+            if(inclusive) {
+                lines[cursor_y + offset] = lines[cursor_y + offset].substr(0, size_of_line_before - 1) + lines[cursor_y + offset].substr(size_of_line_before, static_cast<int>(lines[cursor_y + offset].size() - size_of_line_before));
             }
         } else {
+            if(lines[old_cursor_y + old_offset + 1] != "") {
+            size_of_line_before = lines[old_cursor_y + old_offset].size();
             buffer[buffer.size() - 1] += lines[old_cursor_y + old_offset + 1].substr(0, cursor_x);
             lines[old_cursor_y + old_offset] += lines[old_cursor_y + old_offset + 1].substr(cursor_x, static_cast<int>(lines[old_cursor_y + old_offset + 1].size() - cursor_x));
-            lines.erase(lines.begin() + old_cursor_y + old_offset + 1);
             if(inclusive) {
-                buffer[buffer.size() - 1] += lines[old_cursor_y + old_offset][lines[old_cursor_y + old_offset].size() - 1];
-                lines[old_cursor_y + old_offset] = lines[old_cursor_y + old_offset].substr(0, static_cast<int>(lines[old_cursor_y + old_offset].size() - 1));
+                buffer[buffer.size() - 1] += lines[old_cursor_y + old_offset][size_of_line_before];
+                lines[old_cursor_y + old_offset] = lines[old_cursor_y + old_offset].substr(0, size_of_line_before) + lines[old_cursor_y + old_offset].substr(size_of_line_before + 1, static_cast<int>(lines[old_cursor_y + old_offset].size() - size_of_line_before - 1));
             }
+            }
+            lines.erase(lines.begin() + old_cursor_y + old_offset + 1);
+        }
+        if(moved_backwards) {
+            buffer.erase(buffer.begin());
+            buffer.insert(buffer.begin() , buffer.back());
+            buffer.pop_back();
+            if(inclusive) {
+                buffer.push_back(thing_to_push_back);
+            }
+        }
+        if(is_linewise(ch)) {
+            if(moved_backwards) lines.erase(lines.begin() + cursor_y + offset);
+            else lines.erase(lines.begin() + old_cursor_y + old_offset);
         }
     }
 
