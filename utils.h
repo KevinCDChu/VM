@@ -23,6 +23,14 @@ void clearline() {
     clrtoeol();
 }
 
+bool is_inclusive(int ch) {
+    return (ch == '$' || ch == 'f' || ch == '%');
+}
+
+bool delete_end_line(int ch) {
+    return true;
+}
+
 bool isnum(const std::string& s)
 {
     for(int i = 0; i < static_cast<int>(s.size()); ++i) {
@@ -56,7 +64,7 @@ bool containsletter(std::string s) {
 }
 
 
-int get_product_of_digits(std::string &command, char &og_command) {
+std::string get_product_of_digits(std::string &command, char &og_command) {
     std::string first_digits;
     std::string second_digits;
     bool in_first = true;
@@ -69,21 +77,22 @@ int get_product_of_digits(std::string &command, char &og_command) {
             else second_digits += i;
         }
     }
-    return stoi(first_digits) * stoi(second_digits);
+    if(first_digits == "") first_digits = "1";
+    if(second_digits == "") second_digits = "1";
+    return std::to_string(stoi(first_digits) * stoi(second_digits));
 }
 
 
+bool movement_command(int ch) {
+    return(ch == 'h' || ch == 'j' || ch == 'k' || ch == 'l' || ch == 'w' || ch == 'b' || ch == '$');
+}
+
 void reformat_command(std::string &command) {
-    int end = command.size() - 1;
-    if(command[end] == 'h' || command[end] == 'j'|| command[end] == 'k' || command[end] == 'l' ) {
-        char og_command; // remember which command we are trying to do (c, y, d)
-        char last_letter = command[end]; // store what the last letter is
-        int multiplier = get_product_of_digits(command, og_command);
-        command = "";
-        command += std::to_string(multiplier);
-        command += og_command;
-        command += last_letter;
-    }
+    char og_command; // remember which command we are trying to do (c, y, d)
+    std::string multiplier = get_product_of_digits(command, og_command);
+    command = "";
+    command += multiplier;
+    command += og_command;
 }
 
 
