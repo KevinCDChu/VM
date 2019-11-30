@@ -993,6 +993,14 @@ class Logic : public Model {
             else if (cmd == 'd') {
                 numcmd = "";
                 if(num.empty()) repeats = 1;
+                if(ch == 'f') {
+                    numcmd = "f";
+                    displayViews();
+                    int last_input = 0;
+                    last_input = getch();
+                    interpret_input(last_input);
+                    displayViews();
+                }
                 if(ch == 'l') { // hardcode these in as they have weird behaviour at the end of lines
                     interpret_input('x');
                     return;
@@ -1017,9 +1025,6 @@ class Logic : public Model {
                         interpret_input(last_input);
                         displayViews();
                     }
-                }
-                if(ch == 'f') {
-                    
                 }
                 if(ch == 'j') {
                     cursor_x = static_cast<int>(lines[cursor_y + offset].size());
@@ -1124,7 +1129,7 @@ class Logic : public Model {
             lines.erase(lines.begin() + old_cursor_y + old_offset + 1);
         }
         if(moved_backwards) {
-            buffer.erase(buffer.begin());
+            if(inclusive) buffer.erase(buffer.begin());
             buffer.insert(buffer.begin() , buffer.back());
             buffer.pop_back();
             if(inclusive) {
