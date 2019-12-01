@@ -1026,16 +1026,18 @@ class Logic : public Model {
                 repeats = 0;
             }
             else if (cmd == 'q') {
-                //if(!valid_register(ch)) return;
+                if(!valid_register(ch)) return;
+                numcmd = "";
                 std::string macro_string;
                 int cur_ch = 0;
-                cmdstr = "RECORDING @" + ch;
+                cmdstr = "RECORDING @" + static_cast<char>(ch);
                 while(cur_ch != 'q') {
+                    displayViews();
                     cur_ch = getch();
                     macro_string += cur_ch;
                     interpret_input(cur_ch);
                 }
-                macros.insert({'p', macro_string});
+                macros.insert({ch, macro_string});
                 repeats = 0;
             }
             else if (cmd == 'r') {
