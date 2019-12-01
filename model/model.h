@@ -1222,7 +1222,7 @@ class Logic : public Model {
 
 
     void do_command_sequence(std::string str) {
-        for(auto &i : str) interpret_input(i);
+        for(auto i : str) interpret_input(i);
     }
 
     void interpret_input(int ch = 0) { // make it possible to do command not from keyboard
