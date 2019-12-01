@@ -49,7 +49,7 @@ class Logic : public Model {
     bool currently_macro = false;
     bool linewise_paste= true;
     std::map<char, std::string> macros;
-    std::string prevcommands = "";
+    std::string prevcommand = "";
     std::vector<int> rlines; // lines added by replace mode
 
     void addView(View *v) override {
@@ -344,7 +344,7 @@ class Logic : public Model {
             save_file();                    
         } 
         else if(cmd == ":q!") {
-            //debug(prevcommands);
+            debug(prevcommand);
             botinsert_mode = false;
             complete = true;
             cmdstr = "";
@@ -621,7 +621,7 @@ class Logic : public Model {
         if(comparable.size() == lines.size()) {
             while(comparable[i] == lines[i]) {
                 if(i == mxs - 1) {
-                    //return; will delete this so that empty changes still are undoable
+                    // return;
                 }
                 ++i;
             } 
@@ -1097,10 +1097,12 @@ class Logic : public Model {
                         interpret_input('i');
                         currently_macro = false;
                         filechange = true;
+                        if (cmd == 'd' || cmd == 'c') prevcommand = num + static_cast<char>(cmd) + static_cast<char>(ch);
                         return;
                     } else {
                         filechange = true;
                         interpret_input('x');
+                        if (cmd == 'd' || cmd == 'c') prevcommand = num + static_cast<char>(cmd) + static_cast<char>(ch);
                         return;
                     }
                 } else if(ch == 'h') {
@@ -1111,10 +1113,12 @@ class Logic : public Model {
                         interpret_input('i');
                         filechange = true;
                         currently_macro = false;
+                        if (cmd == 'd' || cmd == 'c') prevcommand = num + static_cast<char>(cmd) + static_cast<char>(ch);
                         return;
                     } else {
                         filechange = true;
                         interpret_input('X');
+                        if (cmd == 'd' || cmd == 'c') prevcommand = num + static_cast<char>(cmd) + static_cast<char>(ch);
                         return;
                     }
                 }
@@ -1129,12 +1133,14 @@ class Logic : public Model {
                 std::string movement_command = "";
                 movement_command += static_cast<char>(ch);
                 if(ch != cmd) interpret_input(ch);
+                if (cmd == 'd' || cmd == 'c') prevcommand = num + static_cast<char>(cmd) + static_cast<char>(ch);
                 if(ch == ':' || ch == '/') { // interpret the command if it is a colon command
                     displayViews();
                     int last_input = 0;
                     while(last_input != 10) {
                         last_input = getch();
                         interpret_input(last_input);
+                        if (cmd == 'd' || cmd == 'c') prevcommand += last_input;
                         displayViews();
                     }
                 }
@@ -1144,6 +1150,7 @@ class Logic : public Model {
                     int last_input = 0;
                     last_input = getch();
                     interpret_input(last_input);
+                    if (cmd == 'd' || cmd == 'c') prevcommand += last_input;
                     displayViews();
                 }
                 if(ch == 'j') {
@@ -1308,8 +1315,6 @@ class Logic : public Model {
             ch = cntrl->getAction()->getchar();
         } 
 
-        prevcommands += ch;
-
         if (!cmdstr.empty() && (cmdstr[0] == 'E' || cmdstr[0] == 's')) {
             cmdstr = "";
         }
@@ -1322,6 +1327,7 @@ class Logic : public Model {
         }
         else {
             if(containsletter(numcmd)) {
+                if(containscd(numcmd)) prevcommand = numcmd + static_cast<char>(ch);
                 if(movement_command(ch)) reformat_command(numcmd); // needed in case of double multipliers (like 3d4l)
                 interpret_showcmd(numcmd.substr(0, numcmd.size()-1), numcmd[numcmd.size()-1], ch);
                 numcmd = "";
@@ -1346,6 +1352,7 @@ class Logic : public Model {
                 returncursor();
             }
             if(insert_mode) {
+                prevcommand += (savedchange + static_cast<char>(27));
                 repeatsave();
                 if(cursor_x != static_cast<int>(lines[cursor_y + offset].size())) cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size()) - 1, 0));
                 cursor_x = std::max(cursor_x - 1, 0);
@@ -1380,11 +1387,15 @@ class Logic : public Model {
             }
         }
         else if(ch == 'i') {
+            if(repeats == 0) prevcommand = "i";
+            else prevcommand = std::to_string(repeats) + "i";
             cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size()) - 1, 0));
             goinsert();
             savecursor();
         }
         else if(ch == 'I') {
+            if(repeats == 0) prevcommand = "I";
+            else prevcommand += std::to_string(repeats) + "I";
             cursor_x = 0;
             goinsert();
             savecursor();
@@ -1446,11 +1457,15 @@ class Logic : public Model {
             repeats = 0;
         }
         else if(ch == 'a') {
+            if(repeats == 0) prevcommand = "a";
+            else prevcommand += std::to_string(repeats) + "a";
             if(cursor_x < static_cast<int>(lines[cursor_y + offset].size())) ++cursor_x;
             goinsert();
             savecursor();
         }
         else if(ch == 'A') {
+            if(repeats == 0) prevcommand = "A";
+            else prevcommand += std::to_string(repeats) + "A";
             cursor_x = lines[cursor_y + offset].size();
             goinsert();
             savecursor();
@@ -1472,6 +1487,8 @@ class Logic : public Model {
             repeats = 0;
         }
         else if(ch == 'x') {
+            if(repeats == 0) prevcommand = "x";
+            else prevcommand += std::to_string(repeats) + "x";
             linewise_paste = false;
             comparable = lines;
             buffer.clear();
@@ -1499,6 +1516,8 @@ class Logic : public Model {
             repeats = 0;
         }
         else if(ch == 'X') {
+            if(repeats == 0) prevcommand = "X";
+            else prevcommand += std::to_string(repeats) + "X";
             linewise_paste = false;
             comparable = lines;
             buffer.clear();
@@ -1527,6 +1546,8 @@ class Logic : public Model {
             repeats = 0;
         }
         else if(ch == 'p') {
+            if(repeats == 0) prevcommand = "p";
+            else prevcommand += std::to_string(repeats) + "p";
             savecursor();
             comparable = lines;
             paste();
@@ -1538,6 +1559,8 @@ class Logic : public Model {
             repeats = 0;
         }
         else if(ch == 'P') {
+            if(repeats == 0) prevcommand = "P";
+            else prevcommand += std::to_string(repeats) + "P";
             if(linewise_paste) {
                 savecursor();
                 comparable = lines;
@@ -1652,6 +1675,8 @@ class Logic : public Model {
             }
         }
         else if(ch == 'J') {
+            if(repeats == 0) prevcommand = "J";
+            else prevcommand += std::to_string(repeats) + "J";
             if(cursor_y + offset >= static_cast<int>(lines.size() - 1)) return;
             comparable = lines;
             savecursor();
@@ -1701,6 +1726,8 @@ class Logic : public Model {
             filechange = true;
         }
         else if(ch == 'O') {
+            std::string tmpcmd = "";
+            if(repeats != 0) tmpcmd = std::to_string(repeats) + "O";
             std::string command = "";
             numcmd = "";
             int savere = repeats;
@@ -1727,13 +1754,22 @@ class Logic : public Model {
                         cursor_down();
                         do_command_sequence(command);
                         interpret_input('i');
-                        do_command_sequence(repeatsaves.first);
+                        savedchange = repeatsaves.first;
+                        repeats = 2;
+                        repeatsave();
                         interpret_input(27);
                         --savere;
                     }
                 }
             }
             currently_macro = false;
+            if(savere == 1) {
+                double_undo_indices.pop_back();
+                prevcommand = (tmpcmd + repeatsaves.first + static_cast<char>(27));
+            }
+            else if (savere == 0) {
+                prevcommand = command + static_cast<char>(KEY_A1) + prevcommand;
+            }
             repeats = 0;
             filechange = true;
         }
@@ -1742,6 +1778,22 @@ class Logic : public Model {
             do_command_sequence(std::to_string(repeats) + "cl");
             currently_macro = false;
             filechange = true;
+        }
+        else if(ch == '.') {
+            std::string tmp = prevcommand;
+            int tmprepeats = repeats;
+            if(!prevcommand.empty()) {
+                if(repeats != 0) {
+                    repeats = 0;
+                    do_command_sequence(replaceforrepeat(prevcommand, tmprepeats));
+                }
+                else {
+                    repeats = 0;
+                    do_command_sequence(prevcommand);
+                }
+            }
+            prevcommand = tmp;
+            repeats = 0;
         }
         else if(ch == 6) { // ^f
             pagedown();
