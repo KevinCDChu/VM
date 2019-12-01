@@ -786,12 +786,10 @@ class Logic : public Model {
         undostack.pop_back();
     }
 
-    void debug(int i, int j, int k) {
+    void debug(std::string x) {
         std::ofstream myfile;
         myfile.open("out.txt");
-        myfile << "true" << i << std::endl;
-        myfile << "true" << j << std::endl;
-        myfile << "true" << k << std::endl;
+        myfile << x << std::endl;
         myfile.close();
     }
 
