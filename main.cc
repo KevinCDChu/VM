@@ -23,6 +23,8 @@ int main(int argc, char * argv[]) {
     std::vector<std::string> lines;
     if(file_exists(argv[1])) {
         std::ifstream f{argv[1]};
+
+        
         f >> std::noskipws;
         char c;
         std::string cur_line;
@@ -35,9 +37,8 @@ int main(int argc, char * argv[]) {
             }
         }
     if(cur_line != "") lines.push_back(cur_line);
-    } else {
-        lines.push_back("");
     }
+    if(lines.empty()) lines.push_back("");
     std::unique_ptr<Logic> logic = std::make_unique<Logic>();
     logic->lines = lines;
     logic->addView(std::make_unique<Window>());
