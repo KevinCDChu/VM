@@ -1039,6 +1039,7 @@ class Logic : public Model {
                 repeats = 0;
             }
             else if (cmd == 'r') {
+                prevcommand = num + static_cast<char>(cmd) + static_cast<char>(ch);
                 if(num.empty()) repeats = 1;
                 int j = std::min(cursor_x, std::max(0, static_cast<int>(lines[curline].size() - 1)));
                 savecursor();
@@ -1278,7 +1279,9 @@ class Logic : public Model {
 
 
     void do_command_sequence(std::string str) {
-        for(auto i : str) interpret_input(i);
+        for(int i = 0; i < static_cast<int>(str.size()); ++i) {
+            interpret_input(str[i]);
+        }
     }
 
     void interpret_input(int ch = 0) { // make it possible to do command not from keyboard
@@ -1368,7 +1371,7 @@ class Logic : public Model {
         }
         else if(ch == 'I') {
             if(repeats == 0) prevcommand = "I";
-            else prevcommand += std::to_string(repeats) + "I";
+            else prevcommand = std::to_string(repeats) + "I";
             cursor_x = 0;
             goinsert();
             savecursor();
@@ -1431,14 +1434,14 @@ class Logic : public Model {
         }
         else if(ch == 'a') {
             if(repeats == 0) prevcommand = "a";
-            else prevcommand += std::to_string(repeats) + "a";
+            else prevcommand = std::to_string(repeats) + "a";
             if(cursor_x < static_cast<int>(lines[cursor_y + offset].size())) ++cursor_x;
             goinsert();
             savecursor();
         }
         else if(ch == 'A') {
             if(repeats == 0) prevcommand = "A";
-            else prevcommand += std::to_string(repeats) + "A";
+            else prevcommand = std::to_string(repeats) + "A";
             cursor_x = lines[cursor_y + offset].size();
             goinsert();
             savecursor();
@@ -1461,7 +1464,7 @@ class Logic : public Model {
         }
         else if(ch == 'x') {
             if(repeats == 0) prevcommand = "x";
-            else prevcommand += std::to_string(repeats) + "x";
+            else prevcommand = std::to_string(repeats) + "x";
             linewise_paste = false;
             comparable = lines;
             buffer.clear();
@@ -1489,7 +1492,7 @@ class Logic : public Model {
         }
         else if(ch == 'X') {
             if(repeats == 0) prevcommand = "X";
-            else prevcommand += std::to_string(repeats) + "X";
+            else prevcommand = std::to_string(repeats) + "X";
             linewise_paste = false;
             comparable = lines;
             buffer.clear();
@@ -1518,7 +1521,7 @@ class Logic : public Model {
         }
         else if(ch == 'p') {
             if(repeats == 0) prevcommand = "p";
-            else prevcommand += std::to_string(repeats) + "p";
+            else prevcommand = std::to_string(repeats) + "p";
             savecursor();
             comparable = lines;
             paste();
@@ -1530,7 +1533,7 @@ class Logic : public Model {
         }
         else if(ch == 'P') {
             if(repeats == 0) prevcommand = "P";
-            else prevcommand += std::to_string(repeats) + "P";
+            else prevcommand = std::to_string(repeats) + "P";
             if(linewise_paste) {
                 savecursor();
                 comparable = lines;
@@ -1560,6 +1563,8 @@ class Logic : public Model {
             }
         }
         else if(ch == 'R') {
+            if(repeats == 0) prevcommand = "R";
+            else prevcommand = std::to_string(repeats) + "R";
             replace_mode = true;
             goinsert();
             savecursor();
@@ -1641,7 +1646,7 @@ class Logic : public Model {
         }
         else if(ch == 'J') {
             if(repeats == 0) prevcommand = "J";
-            else prevcommand += std::to_string(repeats) + "J";
+            else prevcommand = std::to_string(repeats) + "J";
             if(cursor_y + offset >= static_cast<int>(lines.size() - 1)) return;
             comparable = lines;
             savecursor();
@@ -1697,42 +1702,49 @@ class Logic : public Model {
             std::pair<std::string, std::string> repeatsaves("", "");
             comparable = lines;
             currently_macro = true;
-            command = "0i\n";
-            std::string esc(1, 27);
-            std::string k(1, 'k');
-            command.append(esc);
-            command.append(k);
-            do_command_sequence(command);
-            interpret_input('i');
-            if(savere != 0) {
-                while(insert_mode) {
-                    displayViews();
-                    interpret_input();
-                    repeatsaves.first = repeatsaves.second;
-                    repeatsaves.second = savedchange;
-                }
-                if(!repeatsaves.first.empty()) {
-                    while(savere > 1) {
-                        cursor_down();
-                        do_command_sequence(command);
-                        interpret_input('i');
-                        savedchange = repeatsaves.first;
-                        repeats = 2;
-                        repeatsave();
-                        interpret_input(27);
-                        --savere;
+            if(cursor_y + offset > 0) {
+                command = "k" + std::to_string(savere) + "A\n";
+                do_command_sequence(command);
+                prevcommand = "k" + prevcommand;
+            }
+            else {
+                command = "0i\n";
+                std::string esc(1, 27);
+                std::string k(1, 'k');
+                command.append(esc);
+                command.append(k);
+                do_command_sequence(command);
+                interpret_input('i');
+                if(savere != 0) {
+                    while(insert_mode) {
+                        displayViews();
+                        interpret_input();
+                        repeatsaves.first = repeatsaves.second;
+                        repeatsaves.second = savedchange;
                     }
+                    if(!repeatsaves.first.empty()) {
+                        while(savere > 1) {
+                            cursor_down();
+                            do_command_sequence(command);
+                            interpret_input('i');
+                            savedchange = repeatsaves.first;
+                            repeats = 2;
+                            repeatsave();
+                            interpret_input(27);
+                            --savere;
+                        }
+                    }
+                }
+                if(savere == 1) {
+                double_undo_indices.pop_back();
+                prevcommand = tmpcmd;
+                    }
+                else if (savere == 0) {
+                    prevcommand = command + static_cast<char>(KEY_A1) + prevcommand;
                 }
             }
             currently_macro = false;
-            if(savere == 1) {
-                double_undo_indices.pop_back();
-                prevcommand = (tmpcmd + repeatsaves.first + static_cast<char>(27));
-            }
-            else if (savere == 0) {
-                prevcommand = command + static_cast<char>(KEY_A1) + prevcommand;
-            }
-            repeats = 0;
+            
         }
         else if(ch == 's') {
             currently_macro = true;
@@ -1748,7 +1760,6 @@ class Logic : public Model {
                     do_command_sequence(replaceforrepeat(prevcommand, tmprepeats));
                 }
                 else {
-                    repeats = 0;
                     do_command_sequence(prevcommand);
                 }
             }
