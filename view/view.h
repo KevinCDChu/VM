@@ -184,7 +184,7 @@ class Bar : public View {
             move (height + 1, width - 18);
             std::string y = std::to_string(cursor_y + offset + 1);
             std::string x = "";
-            if(cmdstr != "-- INSERT --") x = std::to_string(1 + std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y+offset].size()-1), 0)));
+            if(cmdstr != "-- INSERT --" && cmdstr != "-- REPLACE --") x = std::to_string(1 + std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y+offset].size()-1), 0)));
             else x = std::to_string(1 + std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y+offset].size()), 0)));
             std::string loc = "";
             int taboff = tabOffset(cursor_x, cursor_y, lines, offset);
@@ -200,7 +200,7 @@ class Bar : public View {
             }
             printw(loc);
 
-            if(cmdstr != "-- INSERT --") move(cursor_y, std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size() - 1), 0)));
+            if(cmdstr != "-- INSERT --" && cmdstr != "-- REPLACE --") move(cursor_y, std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size() - 1), 0)));
             else move(cursor_y, std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size()), 0)));
         }
         else {

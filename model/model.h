@@ -9,10 +9,10 @@
 
 class Model {
   public:
-    std::vector<View*> views;
-    Controller *cntrl;
-    virtual void addView(View *v) = 0;
-    virtual void addController(Controller *c) = 0;
+    std::vector<std::unique_ptr<View>> views;
+    std::unique_ptr<Controller> cntrl;
+    virtual void addView(std::unique_ptr<View> &&v) = 0;
+    virtual void addController(std::unique_ptr<Controller> &&c) = 0;
     virtual void updateViews() = 0;
     virtual void displayViews() = 0;
 };
@@ -39,6 +39,7 @@ class Logic : public Model {
     std::vector<std::pair <std::pair<int, int>, int>> prevloc;
     std::vector<Undo> undostack; 
     std::vector<std::string> comparable;
+    std::vector<std::string> temp_comparable; // needed for replace mode
     std::string prevpattern = "";
     std::pair<int, int> prevchar;
     int backmovecount = 0;
@@ -49,13 +50,14 @@ class Logic : public Model {
     bool linewise_paste= true;
     std::map<char, std::string> macros;
     std::string prevcommand = "";
+    std::vector<int> rlines; // lines added by replace mode
 
-    void addView(View *v) override {
-        views.push_back(v);
+    void addView(std::unique_ptr<View> &&v) override {
+        views.push_back(std::move(v));
     }
 
-    void addController(Controller *c) override {
-        cntrl = c;
+    void addController(std::unique_ptr<Controller> &&c) override {
+        cntrl = std::move(c);
     }
 
     void save_file() {
@@ -107,17 +109,21 @@ class Logic : public Model {
                 --cursor_x;
                 clearline();
             } else if(ch == KEY_BACKSPACE && replace_mode) {
-                if((cur_line < static_cast<int>(comparable.size()) && cursor_x > static_cast<int>(comparable[cur_line].size())) || cur_line >= static_cast<int>(comparable.size())) { // do normal backspace in this case
+                if((cur_line < static_cast<int>(temp_comparable.size()) && cursor_x > static_cast<int>(temp_comparable[cur_line].size())) || cur_line >= static_cast<int>(temp_comparable.size())) { // do normal backspace in this case
                     lines[cur_line] = lines[cur_line].substr(0, cursor_x - 1);
                     --cursor_x;
                     clearline();
                 } else { // decrement cursor and just add back character from 
-                    lines[cur_line][cursor_x] = comparable[cur_line][cursor_x];
+                    lines[cur_line][cursor_x - 1] = temp_comparable[cur_line][cursor_x - 1];
                     --cursor_x;
                     clearline(); 
                 }
             } else if(ch == 10) {
                 lines.insert(lines.begin() + cur_line + 1, "");
+                if(replace_mode) {
+                    rlines.push_back(cur_line + 1);
+                    temp_comparable.insert(temp_comparable.begin() + cur_line + 1, "");
+                }
                 cursor_x = 0;
                 if(cursor_y == views[0]->getHeight()) ++offset;
                 else ++cursor_y;
@@ -146,7 +152,7 @@ class Logic : public Model {
         }
         else if(ch == KEY_BACKSPACE) { // Backspace key
             if(cursor_x == 0) {
-                if(replace_mode && cur_line) {
+                if(replace_mode && cur_line && !in(rlines, cur_line)) {
                     --cursor_y;
                     cursor_x = static_cast<int>(lines[cursor_y + offset].size());
                     --backmovecount;
@@ -159,15 +165,20 @@ class Logic : public Model {
                     else --offset;
                     clear();
                     --backmovecount;
+                    if(replace_mode) {
+                        rem(rlines, cur_line);
+                        temp_comparable[cur_line - 1] = temp_comparable[cur_line - 1].append(temp_comparable[cur_line]);
+                        temp_comparable.erase(temp_comparable.begin() + cur_line);
+                    }
                 }
             } else {
                 if(replace_mode) { // just add back charcter that was there
-                    if((cur_line < static_cast<int>(comparable.size()) && cursor_x >= static_cast<int>(comparable[cur_line].size())) || cur_line >= static_cast<int>(comparable.size())) { // do normal backspace in this case
+                    if((cur_line < static_cast<int>(temp_comparable.size()) && cursor_x > static_cast<int>(temp_comparable[cur_line].size())) || cur_line >= static_cast<int>(temp_comparable.size())) { // do normal backspace in this case
                     lines[cur_line] = lines[cur_line].substr(0, cursor_x - 1);
                     --cursor_x;
                     clearline();
                     } else { // decrement cursor and just add back character from 
-                    lines[cur_line][cursor_x - 1] = comparable[cur_line][cursor_x - 1];
+                    lines[cur_line][cursor_x - 1] = temp_comparable[cur_line][cursor_x - 1];
                     --cursor_x;
                     clearline(); 
                 }
@@ -178,6 +189,11 @@ class Logic : public Model {
             } }
         } else if(ch == 10) { // Enter key
             lines.insert(lines.begin() + cur_line + 1, lines[cur_line].substr(cursor_x, lines[cur_line].size() - cursor_x));
+            if(replace_mode) {
+                rlines.push_back(cur_line + 1);
+                temp_comparable.insert(temp_comparable.begin() + cur_line + 1, temp_comparable[cur_line].substr(cursor_x, temp_comparable[cur_line].size() - cursor_x));
+                temp_comparable[cur_line] = temp_comparable[cur_line].substr(0, cursor_x);
+            }
             lines[cur_line] = lines[cur_line].substr(0, cursor_x);
             cursor_x = 0;
             if(cursor_y == views[0]->getHeight()) ++offset;
@@ -1026,17 +1042,23 @@ class Logic : public Model {
                 repeats = 0;
             }
             else if (cmd == 'q') {
-                //if(!valid_register(ch)) return;
+                if(!valid_register(ch)) return;
+                numcmd = "";
                 std::string macro_string;
                 int cur_ch = 0;
-                cmdstr = "RECORDING @" + ch;
+                cmdstr = "";
+                clearbottom(views[0]->getHeight());
+                cmdstr = "RECORDING @" + static_cast<char>(ch);
                 while(cur_ch != 'q') {
+                    cmdstr = "RECORDING @" + static_cast<char>(ch);
+                    displayViews();
                     cur_ch = getch();
                     macro_string += cur_ch;
                     interpret_input(cur_ch);
                 }
-                macros.insert({'p', macro_string});
+                macros.insert({ch, macro_string});
                 repeats = 0;
+                return;
             }
             else if (cmd == 'r') {
                 prevcommand = num + static_cast<char>(cmd) + static_cast<char>(ch);
@@ -1075,9 +1097,11 @@ class Logic : public Model {
                         do_command_sequence("x");
                         interpret_input('i');
                         currently_macro = false;
+                        filechange = true;
                         if (cmd == 'd' || cmd == 'c') prevcommand = num + static_cast<char>(cmd) + static_cast<char>(ch);
                         return;
                     } else {
+                        filechange = true;
                         interpret_input('x');
                         if (cmd == 'd' || cmd == 'c') prevcommand = num + static_cast<char>(cmd) + static_cast<char>(ch);
                         return;
@@ -1088,10 +1112,12 @@ class Logic : public Model {
                         currently_macro = true;
                         do_command_sequence("X");
                         interpret_input('i');
+                        filechange = true;
                         currently_macro = false;
                         if (cmd == 'd' || cmd == 'c') prevcommand = num + static_cast<char>(cmd) + static_cast<char>(ch);
                         return;
                     } else {
+                        filechange = true;
                         interpret_input('X');
                         if (cmd == 'd' || cmd == 'c') prevcommand = num + static_cast<char>(cmd) + static_cast<char>(ch);
                         return;
@@ -1183,6 +1209,7 @@ class Logic : public Model {
                 } else {
                     linewise_paste = false;
                 }
+                filechange = true;
             }
         }
     }
@@ -1304,9 +1331,11 @@ class Logic : public Model {
         else {
             if(containsletter(numcmd)) {
                 if(containscd(numcmd)) prevcommand = numcmd + static_cast<char>(ch);
-                if(movement_command(ch)) reformat_command(numcmd); // needed in case of double multipliers (like 3d4l)
+                try{
+                    if(movement_command(ch)) reformat_command(numcmd); // needed in case of double multipliers (like 3d4l)
                 interpret_showcmd(numcmd.substr(0, numcmd.size()-1), numcmd[numcmd.size()-1], ch);
                 numcmd = "";
+                } catch(...) {}
                 return;
             }
             else if (!numcmd.empty()) {
@@ -1488,6 +1517,7 @@ class Logic : public Model {
                 }
             }
             comparesaves();
+            filechange = true;
             repeats = 0;
         }
         else if(ch == 'X') {
@@ -1517,6 +1547,7 @@ class Logic : public Model {
             reverse(buffer[0].begin(), buffer[0].end());
             savecursor(); // cursor does not return, so save here
             comparesaves();
+            filechange = true;
             repeats = 0;
         }
         else if(ch == 'p') {
@@ -1529,6 +1560,7 @@ class Logic : public Model {
                 paste();
             } 
             comparesaves();
+            filechange = true;
             repeats = 0;
         }
         else if(ch == 'P') {
@@ -1561,11 +1593,14 @@ class Logic : public Model {
                 repeats = 0;
                 lines[curline] = lines[curline].substr(1, lines[curline].size() - 1);
             }
+            filechange = true;
         }
         else if(ch == 'R') {
             if(repeats == 0) prevcommand = "R";
             else prevcommand = std::to_string(repeats) + "R";
             replace_mode = true;
+            temp_comparable = lines;
+            rlines.clear();
             goinsert();
             savecursor();
         }
@@ -1579,6 +1614,7 @@ class Logic : public Model {
             }
             currently_macro = false;
             repeats = 0;
+            filechange = true;
         }
         else if(ch == '0') {
             if(numcmd == "") {
@@ -1626,6 +1662,7 @@ class Logic : public Model {
             currently_macro = true;
             do_command_sequence(macros[getch()]);
             currently_macro = false;
+            filechange = true;
         }
         else if(ch == 'N') {
             if(!prevpattern.empty()) {
@@ -1676,6 +1713,7 @@ class Logic : public Model {
             }
             comparesaves();
             repeats = 0;
+            filechange = true;
         }
         else if(ch == ';') {
             if(prevchar.first != 0) {
@@ -1692,11 +1730,13 @@ class Logic : public Model {
             std::string command = "A\n";
             do_command_sequence(command);
             currently_macro = false;
+            filechange = true;
         }
         else if(ch == 'O') {
             std::string tmpcmd = "";
             if(repeats != 0) tmpcmd = std::to_string(repeats) + "O";
             std::string command = "";
+            numcmd = "";
             int savere = repeats;
             repeats = 0;
             std::pair<std::string, std::string> repeatsaves("", "");
@@ -1742,14 +1782,16 @@ class Logic : public Model {
                 else if (savere == 0) {
                     prevcommand = command + static_cast<char>(KEY_A1) + prevcommand;
                 }
+                repeats = 0;
+                filechange = true;
             }
             currently_macro = false;
-            
         }
         else if(ch == 's') {
             currently_macro = true;
             do_command_sequence(std::to_string(repeats) + "cl");
             currently_macro = false;
+            filechange = true;
         }
         else if(ch == '.') {
             std::string tmp = prevcommand;
