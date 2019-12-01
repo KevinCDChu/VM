@@ -5,20 +5,20 @@
 
 class Controller {
     public:
-    Action *action;
-    virtual Action *getAction() = 0;
+    std::unique_ptr<Action> action;
+    virtual std::unique_ptr<Action> getAction() = 0;
     virtual void genAction() = 0;
 };
 
 class Keyboard: public Controller {
     public:
-    Action *getAction() override {
-        return action;
+    std::unique_ptr<Action> getAction() override {
+        return std::move(action);
     }
     void genAction() override {
         int ch = getch();
         Action tmp = Action(ch);
-        action = &tmp;
+        action = std::make_unique<Action>(tmp);
     }
 
 };

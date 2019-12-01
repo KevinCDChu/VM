@@ -1295,10 +1295,10 @@ class Logic : public Model {
     }
 
     void interpret_input(int ch = 0) { // make it possible to do command not from keyboard
-
         if(ch == 0) {
             cntrl->genAction();
-            ch = cntrl->getAction()->getchar();
+            std::unique_ptr<Action> new_action = cntrl->getAction();
+            ch = new_action->getchar();
         } 
 
         if (!cmdstr.empty() && (cmdstr[0] == 'E' || cmdstr[0] == 's')) {
