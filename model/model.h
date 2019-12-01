@@ -25,12 +25,12 @@ class Logic : public Model {
     bool botinsert_mode = false;
     bool replace_mode = false; // will affect how backspace and adding characters work in insert mode
     bool filechange = false;
-    std::string filename;
+    std::string filename = "";
     std::vector<std::string> lines;
     std::string cmdstr = "";
     std::string numcmd = "";
     std::string savedchange = "";
-    std::vector<std::string> buffer = {"hello there"};
+    std::vector<std::string> buffer = {""};
     int repeats = 0;
     int offset = 0;
     int cursor_x = 0;
@@ -45,7 +45,7 @@ class Logic : public Model {
     std::vector<std::string> entire_file_buffer;
     bool insert_did_something = false; // true if insert actually did something
     std::vector<size_t> double_undo_indices;
-    bool currently_macro;
+    bool currently_macro = false;
 
     void addView(View *v) override {
         views.push_back(v);
@@ -1453,7 +1453,16 @@ class Logic : public Model {
             repeats = 0;
         }
         else if(ch == 'P') {
-            if(cursor_x > 0) {
+            if(linewise_paste) {
+                savecursor();
+                comparable = lines;
+                for(int i = 0; i < static_cast<int>(buffer.size()); ++i) {
+                    lines.insert(lines.begin() + cursor_y + offset + i, buffer[i]);
+                }
+                comparesaves();
+                repeats = 0;
+            }
+            else if(cursor_x > 0) {
                 cursor_left();
                 interpret_input('p');
             } 
@@ -1578,8 +1587,6 @@ class Logic : public Model {
         }
         else if(ch == 'o') {
             comparable = lines;
-            savecursor();
-            comparesaves();
             currently_macro = true;
             std::string command = "A\n";
             do_command_sequence(command);
@@ -1588,10 +1595,7 @@ class Logic : public Model {
         }
         else if(ch == 's') {
             comparable = lines;
-            savecursor();
-            comparesaves();
             currently_macro = true;
-            numcmd = "";
             std::string command = "cl";
             do_command_sequence(command);
             currently_macro = false;
