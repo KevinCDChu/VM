@@ -1566,16 +1566,6 @@ class Logic : public Model {
             currently_macro = false;
             repeats = 0;
         }
-        else if(ch == 'o') {
-            comparable = lines;
-            savecursor();
-            comparesaves();
-            currently_macro = true;
-            std::string command = "A\n";
-            do_command_sequence(command);
-            currently_macro = false;
-            repeats = 0;
-        }
         else if(ch == 's') {
             comparable = lines;
             savecursor();
