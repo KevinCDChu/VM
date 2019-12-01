@@ -1443,6 +1443,26 @@ class Logic : public Model {
             comparesaves();
             repeats = 0;
         }
+        else if(ch == 'P') {
+            if(cursor_x > 0) {
+                cursor_left();
+                interpret_input('p');
+            } 
+            else {
+                int curline = cursor_y + offset;
+                savecursor();
+                comparable = lines;
+                lines[curline] = " " + lines[curline];
+                cursor_x = 0;
+                paste();
+                for(int i = 1; i < repeats; ++i) {
+                    paste();
+                } 
+                comparesaves();
+                repeats = 0;
+                lines[curline] = lines[curline].substr(1, lines[curline].size() - 1);
+            }
+        }
         else if(ch == 'R') {
             replace_mode = true;
             goinsert();
