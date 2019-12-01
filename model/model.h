@@ -1053,10 +1053,8 @@ class Logic : public Model {
                     interpret_input('x');
                     linewise_paste = false;
                     if(cmd == 'c') {
-                    savecursor();
-                    comparesaves();
                     currently_macro = true;
-                    goinsert();
+                    interpret_input('i');
                     currently_macro = false;
                     }
                     return;
@@ -1064,10 +1062,8 @@ class Logic : public Model {
                     linewise_paste = false;
                     interpret_input('X');
                     if(cmd == 'c') {
-                    savecursor();
-                    comparesaves();
                     currently_macro = true;
-                    goinsert();
+                    interpret_input('i');
                     currently_macro = false;
                     }
                     return;
@@ -1133,8 +1129,9 @@ class Logic : public Model {
                 }
                 comparesaves();
                 if(cmd == 'c') {
-                    double_undo_indices.push_back(undostack.size());
-                    goinsert();
+                    currently_macro = true;
+                    interpret_input('i');
+                    currently_macro = false;
                 }
                 if(cmd == 'y') interpret_input('u'); // undo all the changes
                 if(cmd == ch || ch == 'j' || ch == 'k') {
