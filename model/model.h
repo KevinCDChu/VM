@@ -48,6 +48,7 @@ class Logic : public Model {
     bool currently_macro = false;
     bool linewise_paste= true;
     std::map<char, std::string> macros;
+    std::string prevcommands = "";
 
     void addView(View *v) override {
         views.push_back(v);
@@ -327,6 +328,7 @@ class Logic : public Model {
             save_file();                    
         } 
         else if(cmd == ":q!") {
+            //debug(prevcommands);
             botinsert_mode = false;
             complete = true;
             cmdstr = "";
@@ -787,12 +789,10 @@ class Logic : public Model {
         undostack.pop_back();
     }
 
-    void debug(int i, int j, int k) {
+    void debug(std::string x) {
         std::ofstream myfile;
         myfile.open("out.txt");
-        myfile << "true" << i << std::endl;
-        myfile << "true" << j << std::endl;
-        myfile << "true" << k << std::endl;
+        myfile << x << std::endl;
         myfile.close();
     }
 
@@ -1277,10 +1277,13 @@ class Logic : public Model {
     }
 
     void interpret_input(int ch = 0) { // make it possible to do command not from keyboard
+
         if(ch == 0) {
             cntrl->genAction();
             ch = cntrl->getAction()->getchar();
         } 
+
+        prevcommands += ch;
 
         if (!cmdstr.empty() && (cmdstr[0] == 'E' || cmdstr[0] == 's')) {
             cmdstr = "";
@@ -1661,6 +1664,41 @@ class Logic : public Model {
             std::string command = "A\n";
             do_command_sequence(command);
             currently_macro = false;
+        }
+        else if(ch == 'O') {
+            std::string command = "";
+            int savere = repeats;
+            repeats = 0;
+            std::pair<std::string, std::string> repeatsaves("", "");
+            comparable = lines;
+            currently_macro = true;
+            command = "0i\n";
+            std::string esc(1, 27);
+            std::string k(1, 'k');
+            command.append(esc);
+            command.append(k);
+            do_command_sequence(command);
+            interpret_input('i');
+            if(savere != 0) {
+                while(insert_mode) {
+                    displayViews();
+                    interpret_input();
+                    repeatsaves.first = repeatsaves.second;
+                    repeatsaves.second = savedchange;
+                }
+                if(!repeatsaves.first.empty()) {
+                    while(savere > 1) {
+                        cursor_down();
+                        do_command_sequence(command);
+                        interpret_input('i');
+                        do_command_sequence(repeatsaves.first);
+                        interpret_input(27);
+                        --savere;
+                    }
+                }
+            }
+            currently_macro = false;
+            repeats = 0;
         }
         else if(ch == 's') {
             currently_macro = true;
