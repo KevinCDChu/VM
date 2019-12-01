@@ -27,6 +27,11 @@ bool is_inclusive(int ch) {
     return (ch == '$' || ch == 'f' || ch == '%');
 }
 
+bool valid_movement(int ch) {
+    return (ch == 'h' || ch == 'j' || ch == 'k' || ch == 'l' || ch == ':' || ch == '/' || ch == '0' || ch == '$' || ch == '%' || ch == ';' || ch == 'f'
+    || ch == 'w' || ch == 'b' || ch == 'n');
+}
+
 bool is_linewise(int ch) {
     return (ch == 'j' || ch == 'k');
 }
