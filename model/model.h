@@ -9,10 +9,10 @@
 
 class Model {
   public:
-    std::vector<View*> views;
-    Controller *cntrl;
-    virtual void addView(View *v) = 0;
-    virtual void addController(Controller *c) = 0;
+    std::vector<std::unique_ptr<View>> views;
+    std::unique_ptr<Controller> cntrl;
+    virtual void addView(std::unique_ptr<View> &&v) = 0;
+    virtual void addController(std::unique_ptr<Controller> &&c) = 0;
     virtual void updateViews() = 0;
     virtual void displayViews() = 0;
 };
@@ -52,12 +52,12 @@ class Logic : public Model {
     std::string prevcommand = "";
     std::vector<int> rlines; // lines added by replace mode
 
-    void addView(View *v) override {
-        views.push_back(v);
+    void addView(std::unique_ptr<View> &&v) override {
+        views.push_back(std::move(v));
     }
 
-    void addController(Controller *c) override {
-        cntrl = c;
+    void addController(std::unique_ptr<Controller> &&c) override {
+        cntrl = std::move(c);
     }
 
     void save_file() {
