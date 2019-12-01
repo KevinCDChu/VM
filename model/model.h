@@ -15,6 +15,7 @@ class Model {
     virtual void addController(std::unique_ptr<Controller> &&c) = 0;
     virtual void updateViews() = 0;
     virtual void displayViews() = 0;
+    virtual ~Model() {}
 };
 
 

@@ -18,6 +18,7 @@ class View {
     virtual int tabOffset(int x, int y, std::vector<std::string> &lines, int offset) = 0;
     virtual void updateView() = 0;
     virtual void displayView(std::vector<std::string> &lines, const int &cursor_y, const int &cursor_x, const int &offset, const std::string &cmdstr, const std::string &cmd) = 0;
+    virtual ~View() {}
 };
 
 
@@ -42,7 +43,7 @@ class Window : public View {
     void displayView(std::vector<std::string> &lines, const int &cursor_y,const  int &cursor_x, const int &offset, const std::string &cmdstr, const std::string &cmd) override {
         move(0, 0);
         int offs = 0;
-        std::vector<int> tmp (height + 2, 0);
+        std::vector<int> tmp (height + 3, 0);
         offsetv = std::move(tmp);
         int start_of_window = offset; // for multiline comments
         get_first_comment(start_of_window, lines);

@@ -38,18 +38,18 @@ int main(int argc, char * argv[]) {
     } else {
         lines.push_back("");
     }
-    Logic logic;
-    logic.lines = lines;
-    logic.addView(std::make_unique<Window>());
-    logic.addView(std::make_unique<Bar>());
-    logic.addController(std::make_unique<Keyboard>());
-    logic.filename = argv[1];
-    logic.updateViews();
-    logic.displayViews();
-    while(!logic.complete) {
-        logic.updateViews();
-        logic.interpret_input();
-        logic.displayViews();
+    std::unique_ptr<Logic> logic = std::make_unique<Logic>();
+    logic->lines = lines;
+    logic->addView(std::make_unique<Window>());
+    logic->addView(std::make_unique<Bar>());
+    logic->addController(std::make_unique<Keyboard>());
+    logic->filename = argv[1];
+    logic->updateViews();
+    logic->displayViews();
+    while(!logic->complete) {
+        logic->updateViews();
+        logic->interpret_input();
+        logic->displayViews();
     }
     endwin();
 }
