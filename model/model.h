@@ -777,7 +777,7 @@ class Logic : public Model {
                 lines[cur_line] += buffer[0];
         }
         for(int i = 1; i < static_cast<int>(buffer.size()); ++i) {
-            lines.insert(lines.begin() + cur_line + i + 1, buffer[i]);
+            lines.insert(lines.begin() + cur_line + i, buffer[i]);
         }
         lines[cur_line + buffer.size() - 1] += last_part;
         if(buffer.size() == 1) {
@@ -1159,7 +1159,7 @@ class Logic : public Model {
                 bool moved_backwards = false;
                 bool inclusive_command = is_inclusive(ch);
                 if(ch == cmd) inclusive_command = true;
-                if(cursor_y + offset == old_cursor_y + old_offset && cursor_x == old_cursor_x && !inclusive_command) return;
+                if(cursor_y + offset == old_cursor_y + old_offset && cursor_x == old_cursor_x && (!inclusive_command || ch == '%')) return;
                 cursor_x = std::min(cursor_x, std::max(0, static_cast<int>(lines[cursor_y + offset].size() - 1)));
                 if(cursor_y < old_cursor_y || (cursor_y == old_cursor_y && cursor_x < old_cursor_x)) moved_backwards = true;
                 delete_and_store(old_cursor_x, old_cursor_y, old_offset, inclusive_command, moved_backwards, ch, cmd);
