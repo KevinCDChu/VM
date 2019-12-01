@@ -46,6 +46,7 @@ class Logic : public Model {
     bool insert_did_something = false; // true if insert actually did something
     std::vector<size_t> double_undo_indices;
     bool currently_macro = false;
+    bool linewise_paste= true;
 
     void addView(View *v) override {
         views.push_back(v);
@@ -742,6 +743,12 @@ class Logic : public Model {
     void paste() {
         int cur_line = cursor_y + offset;
         int j = std::min(cursor_x, static_cast<int>(lines[cur_line].size()) - 1);
+        if(linewise_paste) {
+            for(size_t i = 0; i < buffer.size(); ++i) {
+                lines.insert(lines.begin() + cur_line  + i + 1, buffer[i]);
+            }
+            return;
+        }
         std::string last_part;
         bool was_empty_start = lines[cur_line] == "";
         if(lines[cur_line] != "" && j != static_cast<int>(lines[cur_line].size() - 1)) {
@@ -751,7 +758,7 @@ class Logic : public Model {
                 lines[cur_line] += buffer[0];
         }
         for(int i = 1; i < static_cast<int>(buffer.size()); ++i) {
-            lines.insert(lines.begin() + cur_line + i, buffer[i]);
+            lines.insert(lines.begin() + cur_line + i + 1, buffer[i]);
         }
         lines[cur_line + buffer.size() - 1] += last_part;
         if(buffer.size() == 1) {
@@ -1039,10 +1046,12 @@ class Logic : public Model {
                 comparesaves();
             }
             else if (cmd == 'd' || cmd == 'c' || cmd == 'y') {
+                if(!valid_movement(ch)) return;
                 numcmd = "";
                 if(num.empty()) repeats = 1;
                 if(ch == 'l') { // hardcode these in as they have weird behaviour at the end of lines
                     interpret_input('x');
+                    linewise_paste = false;
                     if(cmd == 'c') {
                     savecursor();
                     comparesaves();
@@ -1052,6 +1061,7 @@ class Logic : public Model {
                     }
                     return;
                 } else if(ch == 'h') {
+                    linewise_paste = false;
                     interpret_input('X');
                     if(cmd == 'c') {
                     savecursor();
@@ -1119,7 +1129,7 @@ class Logic : public Model {
                 }
                 repeats = 0;
                 if(cmd == ch) {
-                    buffer.insert(buffer.begin(), "");
+                    //buffer.insert(buffer.begin(), "");
                 }
                 comparesaves();
                 if(cmd == 'c') {
@@ -1127,6 +1137,11 @@ class Logic : public Model {
                     goinsert();
                 }
                 if(cmd == 'y') interpret_input('u'); // undo all the changes
+                if(cmd == ch || ch == 'j' || ch == 'k') {
+                    linewise_paste = true;
+                } else {
+                    linewise_paste = false;
+                }
             }
         }
     }
@@ -1204,7 +1219,7 @@ class Logic : public Model {
             }
             lines.erase(lines.begin() + old_cursor_y + old_offset + 1);
         }
-        if(moved_backwards) {
+        if(moved_backwards && !(cmd == ch || is_linewise(ch))) {
             if(inclusive) buffer.erase(buffer.begin());
             buffer.insert(buffer.begin() , buffer.back());
             buffer.pop_back();
@@ -1213,8 +1228,9 @@ class Logic : public Model {
             }
         }
         if(is_linewise(ch)) {
-            if(moved_backwards) lines.erase(lines.begin() + cursor_y + offset);
-            else lines.erase(lines.begin() + old_cursor_y + old_offset);
+           if(moved_backwards) lines.erase(lines.begin() + cursor_y + offset);
+           else lines.erase(lines.begin() + old_cursor_y + old_offset);
+           if(moved_backwards) std::swap(buffer[0], buffer[buffer.size() - 1]); // swap first and last for some reason
         }
     }
 
@@ -1392,6 +1408,7 @@ class Logic : public Model {
             repeats = 0;
         }
         else if(ch == 'x') {
+            linewise_paste = false;
             comparable = lines;
             buffer.clear();
             buffer.push_back("");
@@ -1417,6 +1434,7 @@ class Logic : public Model {
             repeats = 0;
         }
         else if(ch == 'X') {
+            linewise_paste = false;
             comparable = lines;
             buffer.clear();
             buffer.push_back("");
