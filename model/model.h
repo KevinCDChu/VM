@@ -39,6 +39,7 @@ class Logic : public Model {
     std::vector<std::pair <std::pair<int, int>, int>> prevloc;
     std::vector<Undo> undostack; 
     std::vector<std::string> comparable;
+    std::vector<std::string> temp_comparable; // needed for replace mode
     std::string prevpattern = "";
     std::pair<int, int> prevchar;
     int backmovecount = 0;
@@ -49,6 +50,7 @@ class Logic : public Model {
     bool linewise_paste= true;
     std::map<char, std::string> macros;
     std::string prevcommands = "";
+    std::vector<int> rlines; // lines added by replace mode
 
     void addView(View *v) override {
         views.push_back(v);
@@ -107,17 +109,21 @@ class Logic : public Model {
                 --cursor_x;
                 clearline();
             } else if(ch == KEY_BACKSPACE && replace_mode) {
-                if((cur_line < static_cast<int>(comparable.size()) && cursor_x > static_cast<int>(comparable[cur_line].size())) || cur_line >= static_cast<int>(comparable.size())) { // do normal backspace in this case
+                if((cur_line < static_cast<int>(temp_comparable.size()) && cursor_x > static_cast<int>(temp_comparable[cur_line].size())) || cur_line >= static_cast<int>(temp_comparable.size())) { // do normal backspace in this case
                     lines[cur_line] = lines[cur_line].substr(0, cursor_x - 1);
                     --cursor_x;
                     clearline();
                 } else { // decrement cursor and just add back character from 
-                    lines[cur_line][cursor_x] = comparable[cur_line][cursor_x];
+                    lines[cur_line][cursor_x - 1] = temp_comparable[cur_line][cursor_x - 1];
                     --cursor_x;
                     clearline(); 
                 }
             } else if(ch == 10) {
                 lines.insert(lines.begin() + cur_line + 1, "");
+                if(replace_mode) {
+                    rlines.push_back(cur_line + 1);
+                    temp_comparable.insert(temp_comparable.begin() + cur_line + 1, "");
+                }
                 cursor_x = 0;
                 if(cursor_y == views[0]->getHeight()) ++offset;
                 else ++cursor_y;
@@ -146,7 +152,7 @@ class Logic : public Model {
         }
         else if(ch == KEY_BACKSPACE) { // Backspace key
             if(cursor_x == 0) {
-                if(replace_mode && cur_line) {
+                if(replace_mode && cur_line && !in(rlines, cur_line)) {
                     --cursor_y;
                     cursor_x = static_cast<int>(lines[cursor_y + offset].size());
                     --backmovecount;
@@ -159,15 +165,20 @@ class Logic : public Model {
                     else --offset;
                     clear();
                     --backmovecount;
+                    if(replace_mode) {
+                        rem(rlines, cur_line);
+                        temp_comparable[cur_line - 1] = temp_comparable[cur_line - 1].append(temp_comparable[cur_line]);
+                        temp_comparable.erase(temp_comparable.begin() + cur_line);
+                    }
                 }
             } else {
                 if(replace_mode) { // just add back charcter that was there
-                    if((cur_line < static_cast<int>(comparable.size()) && cursor_x >= static_cast<int>(comparable[cur_line].size())) || cur_line >= static_cast<int>(comparable.size())) { // do normal backspace in this case
+                    if((cur_line < static_cast<int>(temp_comparable.size()) && cursor_x > static_cast<int>(temp_comparable[cur_line].size())) || cur_line >= static_cast<int>(temp_comparable.size())) { // do normal backspace in this case
                     lines[cur_line] = lines[cur_line].substr(0, cursor_x - 1);
                     --cursor_x;
                     clearline();
                     } else { // decrement cursor and just add back character from 
-                    lines[cur_line][cursor_x - 1] = comparable[cur_line][cursor_x - 1];
+                    lines[cur_line][cursor_x - 1] = temp_comparable[cur_line][cursor_x - 1];
                     --cursor_x;
                     clearline(); 
                 }
@@ -178,6 +189,11 @@ class Logic : public Model {
             } }
         } else if(ch == 10) { // Enter key
             lines.insert(lines.begin() + cur_line + 1, lines[cur_line].substr(cursor_x, lines[cur_line].size() - cursor_x));
+            if(replace_mode) {
+                rlines.push_back(cur_line + 1);
+                temp_comparable.insert(temp_comparable.begin() + cur_line + 1, temp_comparable[cur_line].substr(cursor_x, temp_comparable[cur_line].size() - cursor_x));
+                temp_comparable[cur_line] = temp_comparable[cur_line].substr(0, cursor_x);
+            }
             lines[cur_line] = lines[cur_line].substr(0, cursor_x);
             cursor_x = 0;
             if(cursor_y == views[0]->getHeight()) ++offset;
@@ -1030,8 +1046,11 @@ class Logic : public Model {
                 numcmd = "";
                 std::string macro_string;
                 int cur_ch = 0;
+                cmdstr = "";
+                clearbottom(views[0]->getHeight());
                 cmdstr = "RECORDING @" + static_cast<char>(ch);
                 while(cur_ch != 'q') {
+                    cmdstr = "RECORDING @" + static_cast<char>(ch);
                     displayViews();
                     cur_ch = getch();
                     macro_string += cur_ch;
@@ -1039,6 +1058,7 @@ class Logic : public Model {
                 }
                 macros.insert({ch, macro_string});
                 repeats = 0;
+                return;
             }
             else if (cmd == 'r') {
                 if(num.empty()) repeats = 1;
@@ -1076,8 +1096,10 @@ class Logic : public Model {
                         do_command_sequence("x");
                         interpret_input('i');
                         currently_macro = false;
+                        filechange = true;
                         return;
                     } else {
+                        filechange = true;
                         interpret_input('x');
                         return;
                     }
@@ -1087,9 +1109,11 @@ class Logic : public Model {
                         currently_macro = true;
                         do_command_sequence("X");
                         interpret_input('i');
+                        filechange = true;
                         currently_macro = false;
                         return;
                     } else {
+                        filechange = true;
                         interpret_input('X');
                         return;
                     }
@@ -1177,6 +1201,7 @@ class Logic : public Model {
                 } else {
                     linewise_paste = false;
                 }
+                filechange = true;
             }
         }
     }
@@ -1470,6 +1495,7 @@ class Logic : public Model {
                 }
             }
             comparesaves();
+            filechange = true;
             repeats = 0;
         }
         else if(ch == 'X') {
@@ -1497,6 +1523,7 @@ class Logic : public Model {
             reverse(buffer[0].begin(), buffer[0].end());
             savecursor(); // cursor does not return, so save here
             comparesaves();
+            filechange = true;
             repeats = 0;
         }
         else if(ch == 'p') {
@@ -1507,6 +1534,7 @@ class Logic : public Model {
                 paste();
             } 
             comparesaves();
+            filechange = true;
             repeats = 0;
         }
         else if(ch == 'P') {
@@ -1537,9 +1565,12 @@ class Logic : public Model {
                 repeats = 0;
                 lines[curline] = lines[curline].substr(1, lines[curline].size() - 1);
             }
+            filechange = true;
         }
         else if(ch == 'R') {
             replace_mode = true;
+            temp_comparable = lines;
+            rlines.clear();
             goinsert();
             savecursor();
         }
@@ -1553,6 +1584,7 @@ class Logic : public Model {
             }
             currently_macro = false;
             repeats = 0;
+            filechange = true;
         }
         else if(ch == '0') {
             if(numcmd == "") {
@@ -1600,6 +1632,7 @@ class Logic : public Model {
             currently_macro = true;
             do_command_sequence(macros[getch()]);
             currently_macro = false;
+            filechange = true;
         }
         else if(ch == 'N') {
             if(!prevpattern.empty()) {
@@ -1648,6 +1681,7 @@ class Logic : public Model {
             }
             comparesaves();
             repeats = 0;
+            filechange = true;
         }
         else if(ch == ';') {
             if(prevchar.first != 0) {
@@ -1664,9 +1698,11 @@ class Logic : public Model {
             std::string command = "A\n";
             do_command_sequence(command);
             currently_macro = false;
+            filechange = true;
         }
         else if(ch == 'O') {
             std::string command = "";
+            numcmd = "";
             int savere = repeats;
             repeats = 0;
             std::pair<std::string, std::string> repeatsaves("", "");
@@ -1699,11 +1735,13 @@ class Logic : public Model {
             }
             currently_macro = false;
             repeats = 0;
+            filechange = true;
         }
         else if(ch == 's') {
             currently_macro = true;
             do_command_sequence(std::to_string(repeats) + "cl");
             currently_macro = false;
+            filechange = true;
         }
         else if(ch == 6) { // ^f
             pagedown();

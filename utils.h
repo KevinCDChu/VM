@@ -2,7 +2,7 @@
 #define UTILS_H
 #include <ncurses.h>
 #include <string>
-
+#include <algorithm>
 
 void printw(std::string str) {
     printw(str.c_str());
@@ -46,6 +46,14 @@ bool isnum(const std::string& s)
         if (!isdigit(s[i])) return false;
     }
     return true;
+}
+
+bool in(std::vector<int> &v, int n) {
+    return std::find(v.begin(), v.end(), n) != v.end();
+}
+
+void rem(std::vector<int> &v, int n) {
+    v.erase(std::find(v.begin(), v.end(), n));
 }
 
 
