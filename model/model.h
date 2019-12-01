@@ -1026,7 +1026,17 @@ class Logic : public Model {
                 repeats = 0;
             }
             else if (cmd == 'q') {
-                if(!valid_register(ch)) return;
+                //if(!valid_register(ch)) return;
+                std::string macro_string;
+                int cur_ch = 0;
+                cmdstr = "RECORDING @" + ch;
+                while(cur_ch != 'q') {
+                    cur_ch = getch();
+                    macro_string += cur_ch;
+                    interpret_input(cur_ch);
+                }
+                macros.insert({'p', macro_string});
+                repeats = 0;
             }
             else if (cmd == 'r') {
                 if(num.empty()) repeats = 1;
@@ -1058,30 +1068,38 @@ class Logic : public Model {
                 numcmd = "";
                 if(num.empty()) repeats = 1;
                 if(ch == 'l') { // hardcode these in as they have weird behaviour at the end of lines
-                    interpret_input('x');
-                    linewise_paste = false;
                     if(cmd == 'c') {
-                    currently_macro = true;
-                    interpret_input('i');
-                    currently_macro = false;
+                        comparable = lines;
+                        currently_macro = true;
+                        do_command_sequence("x");
+                        interpret_input('i');
+                        currently_macro = false;
+                        return;
+                    } else {
+                        interpret_input('x');
+                        return;
                     }
-                    return;
                 } else if(ch == 'h') {
-                    linewise_paste = false;
-                    interpret_input('X');
                     if(cmd == 'c') {
-                    currently_macro = true;
-                    interpret_input('i');
-                    currently_macro = false;
+                        comparable = lines;
+                        currently_macro = true;
+                        do_command_sequence("X");
+                        interpret_input('i');
+                        currently_macro = false;
+                        return;
+                    } else {
+                        interpret_input('X');
+                        return;
                     }
-                    return;
                 }
                 cursor_x = std::min(cursor_x, std::max(0, static_cast<int>(lines[cursor_y + offset].size() - 1)));
                 int old_cursor_x = cursor_x;
                 int old_cursor_y = cursor_y;
                 int old_offset = offset;
                 comparable = lines;
+                if(cmd == 'c') currently_macro = true;
                 savecursor();
+                if(cmd == 'c') currently_macro = false;
                 std::string movement_command = "";
                 movement_command += static_cast<char>(ch);
                 if(ch != cmd) interpret_input(ch);
@@ -1111,8 +1129,15 @@ class Logic : public Model {
                     cursor_x = 0; 
                 }
                 if(ch == cmd) {
+                    if(repeats != 1) {
                     old_cursor_x = 0;
-                    cursor_x = static_cast<int>(lines[old_cursor_y + old_offset].size());
+                    repeats = std::min(repeats, static_cast<int>(lines.size() - cursor_y - offset));
+                    cursor_x = static_cast<int>(lines[old_cursor_y + old_offset + repeats - 1].size());
+                    cursor_y += repeats - 1;
+                    } else {
+                        old_cursor_x = 0;
+                       cursor_x = static_cast<int>(lines[old_cursor_y + old_offset].size());
+                    }
                 }
                 bool moved_backwards = false;
                 bool inclusive_command = is_inclusive(ch);
@@ -1131,12 +1156,15 @@ class Logic : public Model {
                     prevloc.back().first.first = cursor_x;
                     prevloc.back().second = cursor_y + offset;
                 }
-                repeats = 0;
+                if(!currently_macro) repeats = 0;
                 if(cmd == ch) {
                     //buffer.insert(buffer.begin(), "");
                 }
+                if(cmd == 'c') currently_macro = true;
                 comparesaves();
+                if(cmd == 'c') currently_macro = false;
                 if(cmd == 'c') {
+                    comparable = lines;
                     currently_macro = true;
                     interpret_input('i');
                     currently_macro = false;
@@ -1306,6 +1334,7 @@ class Logic : public Model {
             savedchange += ch;
             insert_did_something = true;
             addCharacter(ch);
+            return;
         }
         else if(botinsert_mode) {
             if(ch == 10) { // Pressed enter, do command
@@ -1512,6 +1541,17 @@ class Logic : public Model {
             goinsert();
             savecursor();
         }
+        else if(ch == 'S') {
+            comparable = lines;
+            currently_macro = true;
+            numcmd = "";
+            if(repeats > 1) do_command_sequence(std::to_string(repeats) + "cc");
+            else {
+                do_command_sequence("cc");
+            }
+            currently_macro = false;
+            repeats = 0;
+        }
         else if(ch == '0') {
             if(numcmd == "") {
                 cursor_x = 0;
@@ -1553,6 +1593,11 @@ class Logic : public Model {
                 returncursor();
                 prevpattern = tmp;
             }
+        }
+        else if(ch == '@') {
+            currently_macro = true;
+            do_command_sequence(macros[getch()]);
+            currently_macro = false;
         }
         else if(ch == 'N') {
             if(!prevpattern.empty()) {
@@ -1654,12 +1699,9 @@ class Logic : public Model {
             repeats = 0;
         }
         else if(ch == 's') {
-            comparable = lines;
             currently_macro = true;
-            std::string command = "cl";
-            do_command_sequence(command);
+            do_command_sequence(std::to_string(repeats) + "cl");
             currently_macro = false;
-            repeats = 0;
         }
         else if(ch == 6) { // ^f
             pagedown();
