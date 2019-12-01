@@ -40,12 +40,9 @@ int main(int argc, char * argv[]) {
     }
     Logic logic;
     logic.lines = lines;
-    std::unique_ptr<Window> window = std::make_unique<Window>();
-    std::unique_ptr<Bar> bar = std::make_unique<Bar>();
-    std::unique_ptr<Keyboard> keyboard = std::make_unique<Keyboard>();
-    logic.addView(std::move(window));
-    logic.addView(std::move(bar));
-    logic.addController(std::move(keyboard));
+    logic.addView(std::make_unique<Window>());
+    logic.addView(std::make_unique<Bar>());
+    logic.addController(std::make_unique<Keyboard>());
     logic.filename = argv[1];
     logic.updateViews();
     logic.displayViews();
