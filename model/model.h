@@ -605,7 +605,10 @@ class Logic : public Model {
         if(comparable.size() == lines.size()) {
             while(comparable[i] == lines[i]) {
                 if(i == mxs - 1) {
-                    //return; will delete this so that empty changes still are undoable
+                    save.setStart(i+1);
+                    undostack.push_back(save);
+                    if(currently_macro) double_undo_indices.push_back(undostack.size());
+                    return;
                 }
                 ++i;
             } 
@@ -1696,6 +1699,9 @@ class Logic : public Model {
                 }
             }
             currently_macro = false;
+            if(savere == 1) {
+                double_undo_indices.pop_back();
+            }
             repeats = 0;
         }
         else if(ch == 's') {
