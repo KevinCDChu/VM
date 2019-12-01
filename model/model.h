@@ -351,6 +351,7 @@ class Logic : public Model {
         }
         else if(cmd == ":w") {
             botinsert_mode = false;
+            filechange = false;
             cmdstr = "";
             save_file();
         }

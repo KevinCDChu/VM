@@ -74,16 +74,16 @@ void myprintw_only_colour_match(std::string &str, std::regex &re, int colour, in
 
 std::regex init_data_types() {
     std::string str;
-    str += "^int |[,(< ]int[,)> ]|[,(< ]int$|";
-    str += "^bool |[,(< ]bool | bool$|";
-    str += "^char |[,(< ]char[,)> ]|[,(< ]char$|";
-    str += "^void |[,(< ]void[,)> ]|[,(< ]void$|";
-    str += "^size_t |[,(< ]size_t[,)> ]|[,(< ]size_t$|";
-    str += "^const |[,(< ]const[,)> ]|[,(< ]const$|";
-    str += "^virtual |[,(< ]virtual[,)> ]|[,(< ]virtual$|";
-    str += "^auto |[,(< ]auto[,)> ]|[,(< ]auto$|";
+    str += "^int |[,(< \t]int[,)> \t]|[,(< \t]int$|";
+    str += "^bool |[,(< \t]bool[,)> \t]| bool$|";
+    str += "^char |[,(< \t]char[,)> \t]|[,(< \t]char$|";
+    str += "^void |[,(< \t]void[,)> \t]|[,(< \t]void$|";
+    str += "^size_t |[,(< \t]size_t[,)> \t]|[,(< \t]size_t$|";
+    str += "^const |[,(< \t]const[,)> \t]|[,(< \t]const$|";
+    str += "^virtual |[,(< \t]virtual[,)> \t]|[,(< \t]virtual$|";
+    str += "^auto |[,(< \t]auto[,)> \t]|[,(< \t]auto$|";
     str += " override |";
-    str += "^class |[,(< ]class[,)> ]|[,(< ]class$";
+    str += "^class |[,(< \t]class[,)> \t]|[,(< \t]class$";
     std::regex re(str);
     return re;
 }
