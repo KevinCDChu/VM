@@ -1300,6 +1300,7 @@ class Logic : public Model {
         }
         else {
             if(containsletter(numcmd)) {
+                if(containscd(numcmd)) prevcommand = numcmd + static_cast<char>(ch);
                 if(movement_command(ch)) reformat_command(numcmd); // needed in case of double multipliers (like 3d4l)
                 interpret_showcmd(numcmd.substr(0, numcmd.size()-1), numcmd[numcmd.size()-1], ch);
                 numcmd = "";
@@ -1324,6 +1325,7 @@ class Logic : public Model {
                 returncursor();
             }
             if(insert_mode) {
+                prevcommand += (savedchange + static_cast<char>(27));
                 repeatsave();
                 if(cursor_x != static_cast<int>(lines[cursor_y + offset].size())) cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size()) - 1, 0));
                 cursor_x = std::max(cursor_x - 1, 0);
@@ -1358,11 +1360,15 @@ class Logic : public Model {
             }
         }
         else if(ch == 'i') {
+            if(repeats == 0) prevcommand = "i";
+            else prevcommand = std::to_string(repeats) + "i";
             cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size()) - 1, 0));
             goinsert();
             savecursor();
         }
         else if(ch == 'I') {
+            if(repeats == 0) prevcommand = "I";
+            else prevcommand += std::to_string(repeats) + "I";
             cursor_x = 0;
             goinsert();
             savecursor();
@@ -1424,11 +1430,15 @@ class Logic : public Model {
             repeats = 0;
         }
         else if(ch == 'a') {
+            if(repeats == 0) prevcommand = "a";
+            else prevcommand += std::to_string(repeats) + "a";
             if(cursor_x < static_cast<int>(lines[cursor_y + offset].size())) ++cursor_x;
             goinsert();
             savecursor();
         }
         else if(ch == 'A') {
+            if(repeats == 0) prevcommand = "A";
+            else prevcommand += std::to_string(repeats) + "A";
             cursor_x = lines[cursor_y + offset].size();
             goinsert();
             savecursor();
@@ -1450,6 +1460,8 @@ class Logic : public Model {
             repeats = 0;
         }
         else if(ch == 'x') {
+            if(repeats == 0) prevcommand = "x";
+            else prevcommand += std::to_string(repeats) + "x";
             linewise_paste = false;
             comparable = lines;
             buffer.clear();
@@ -1476,6 +1488,8 @@ class Logic : public Model {
             repeats = 0;
         }
         else if(ch == 'X') {
+            if(repeats == 0) prevcommand = "X";
+            else prevcommand += std::to_string(repeats) + "X";
             linewise_paste = false;
             comparable = lines;
             buffer.clear();
@@ -1503,7 +1517,8 @@ class Logic : public Model {
             repeats = 0;
         }
         else if(ch == 'p') {
-            prevcommand = "p";
+            if(repeats == 0) prevcommand = "p";
+            else prevcommand += std::to_string(repeats) + "p";
             savecursor();
             comparable = lines;
             paste();
@@ -1514,7 +1529,8 @@ class Logic : public Model {
             repeats = 0;
         }
         else if(ch == 'P') {
-            prevcommand = "P";
+            if(repeats == 0) prevcommand = "P";
+            else prevcommand += std::to_string(repeats) + "P";
             if(linewise_paste) {
                 savecursor();
                 comparable = lines;
@@ -1624,6 +1640,8 @@ class Logic : public Model {
             }
         }
         else if(ch == 'J') {
+            if(repeats == 0) prevcommand = "J";
+            else prevcommand += std::to_string(repeats) + "J";
             if(cursor_y + offset >= static_cast<int>(lines.size() - 1)) return;
             comparable = lines;
             savecursor();
@@ -1671,6 +1689,8 @@ class Logic : public Model {
             currently_macro = false;
         }
         else if(ch == 'O') {
+            std::string tmpcmd = "";
+            if(repeats != 0) tmpcmd = std::to_string(repeats) + "O";
             std::string command = "";
             int savere = repeats;
             repeats = 0;
@@ -1696,7 +1716,9 @@ class Logic : public Model {
                         cursor_down();
                         do_command_sequence(command);
                         interpret_input('i');
-                        do_command_sequence(repeatsaves.first);
+                        savedchange = repeatsaves.first;
+                        repeats = 2;
+                        repeatsave();
                         interpret_input(27);
                         --savere;
                     }
@@ -1705,6 +1727,10 @@ class Logic : public Model {
             currently_macro = false;
             if(savere == 1) {
                 double_undo_indices.pop_back();
+                prevcommand = (tmpcmd + repeatsaves.first + static_cast<char>(27));
+            }
+            else if (savere == 0) {
+                prevcommand = command + static_cast<char>(KEY_A1) + prevcommand;
             }
             repeats = 0;
         }
@@ -1712,6 +1738,22 @@ class Logic : public Model {
             currently_macro = true;
             do_command_sequence(std::to_string(repeats) + "cl");
             currently_macro = false;
+        }
+        else if(ch == '.') {
+            std::string tmp = prevcommand;
+            int tmprepeats = repeats;
+            if(!prevcommand.empty()) {
+                if(repeats != 0) {
+                    repeats = 0;
+                    do_command_sequence(replaceforrepeat(prevcommand, tmprepeats));
+                }
+                else {
+                    repeats = 0;
+                    do_command_sequence(prevcommand);
+                }
+            }
+            prevcommand = tmp;
+            repeats = 0;
         }
         else if(ch == 6) { // ^f
             pagedown();

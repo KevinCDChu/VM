@@ -72,6 +72,33 @@ bool containsletter(std::string s) {
     return false;
 }
 
+bool containscd(std::string s) {
+    for(int i = 0; i < static_cast<int>(s.size()); ++i) {
+        if(s[i] == 'd' || s[i] == 'c') {
+            return true;
+        }
+    }
+    return false;
+}
+
+std::string replaceforrepeat(std::string s, int repeat) {
+    int i = 0;
+    while(isdigit(s[i])) {
+        ++i;
+    }
+    s = s.substr(i, s.size() - i);
+    s = std::to_string(repeat) + s;
+    std::string main = "";
+    for(int j = 0; j < static_cast<int>(s.size()); ++j) {
+        if(s[j] == KEY_A1) {
+            main += std::to_string(repeat);
+        }
+        else {
+            main += s[j];
+        }
+    }
+    return main;
+}
 
 std::string get_product_of_digits(std::string &command, char &og_command) {
     std::string first_digits;
