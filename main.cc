@@ -23,6 +23,8 @@ int main(int argc, char * argv[]) {
     std::vector<std::string> lines;
     if(file_exists(argv[1])) {
         std::ifstream f{argv[1]};
+
+        
         f >> std::noskipws;
         char c;
         std::string cur_line;
@@ -35,14 +37,13 @@ int main(int argc, char * argv[]) {
             }
         }
     if(cur_line != "") lines.push_back(cur_line);
-    } else {
-        lines.push_back("");
     }
+    if(lines.empty()) lines.push_back("");
     Logic logic;
     logic.lines = lines;
-    std::unique_ptr<Window> window = std::make_unique<Window>();
-    std::unique_ptr<Bar> bar = std::make_unique<Bar>();
-    std::unique_ptr<Keyboard> keyboard = std::make_unique<Keyboard>();
+    std::unique_ptr<View> window = std::make_unique<Window>();
+    std::unique_ptr<View> bar = std::make_unique<Bar>();
+    std::unique_ptr<Controller> keyboard = std::make_unique<Keyboard>();
     logic.addView(std::move(window));
     logic.addView(std::move(bar));
     logic.addController(std::move(keyboard));
