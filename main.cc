@@ -41,12 +41,9 @@ int main(int argc, char * argv[]) {
     if(lines.empty()) lines.push_back("");
     Logic logic;
     logic.lines = lines;
-    std::unique_ptr<View> window = std::make_unique<Window>();
-    std::unique_ptr<View> bar = std::make_unique<Bar>();
-    std::unique_ptr<Controller> keyboard = std::make_unique<Keyboard>();
-    logic.addView(std::move(window));
-    logic.addView(std::move(bar));
-    logic.addController(std::move(keyboard));
+    logic.addView(std::make_unique<Window>());
+    logic.addView(std::make_unique<Bar>());
+    logic.addController(std::make_unique<Keyboard>());
     logic.filename = argv[1];
     logic.updateViews();
     logic.displayViews();
