@@ -89,6 +89,15 @@ bool containscd(std::string s) {
     return false;
 }
 
+bool containscdy(std::string s) {
+    for(int i = 0; i < static_cast<int>(s.size()); ++i) {
+        if(s[i] == 'd' || s[i] == 'c' || s[i] == 'y') {
+            return true;
+        }
+    }
+    return false;
+}
+
 std::string replaceforrepeat(std::string s, int repeat) {
     int i = 0;
     while(isdigit(s[i])) {
@@ -126,10 +135,6 @@ std::string get_product_of_digits(std::string &command, char &og_command) {
     return std::to_string(stoi(first_digits) * stoi(second_digits));
 }
 
-
-bool movement_command(int ch) {
-    return(ch == 'h' || ch == 'j' || ch == 'k' || ch == 'l' || ch == 'w' || ch == 'b' || ch == '$');
-}
 
 void reformat_command(std::string &command) {
     char og_command; // remember which command we are trying to do (c, y, d)

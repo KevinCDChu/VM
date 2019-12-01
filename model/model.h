@@ -1041,25 +1041,6 @@ class Logic : public Model {
                 }
                 repeats = 0;
             }
-            else if (cmd == 'q') {
-                if(!valid_register(ch)) return;
-                numcmd = "";
-                std::string macro_string;
-                int cur_ch = 0;
-                cmdstr = "";
-                clearbottom(views[0]->getHeight());
-                cmdstr = "RECORDING @" + static_cast<char>(ch);
-                while(cur_ch != 'q') {
-                    cmdstr = "RECORDING @" + static_cast<char>(ch);
-                    displayViews();
-                    cur_ch = getch();
-                    macro_string += cur_ch;
-                    interpret_input(cur_ch);
-                }
-                macros.insert({ch, macro_string});
-                repeats = 0;
-                return;
-            }
             else if (cmd == 'r') {
                 prevcommand = num + static_cast<char>(cmd) + static_cast<char>(ch);
                 if(num.empty()) repeats = 1;
@@ -1146,10 +1127,12 @@ class Logic : public Model {
                     }
                 }
                 if(ch == 'f') {
-                    numcmd = cmd + "f";
                     displayViews();
                     int last_input = 0;
                     last_input = getch();
+                    if(last_input == 27) return; // idk about this
+                    numcmd = "f";
+                    repeats = 0;
                     interpret_input(last_input);
                     if (cmd == 'd' || cmd == 'c') prevcommand += last_input;
                     displayViews();
@@ -1321,7 +1304,7 @@ class Logic : public Model {
         if (!cmdstr.empty() && (cmdstr[0] == 'E' || cmdstr[0] == 's')) {
             cmdstr = "";
         }
-
+        if(ch == 27) numcmd = "";
         if((isdigit(ch) || (!containsletter(numcmd) && matchshowcmd(ch))) && !botinsert_mode && !insert_mode) {
             numcmd += ch;
             if (numcmd == "0") {
@@ -1331,11 +1314,9 @@ class Logic : public Model {
         else {
             if(containsletter(numcmd)) {
                 if(containscd(numcmd)) prevcommand = numcmd + static_cast<char>(ch);
-                try{
-                    if(movement_command(ch)) reformat_command(numcmd); // needed in case of double multipliers (like 3d4l)
+                if(valid_movement(ch) && containscdy(numcmd)) reformat_command(numcmd); // needed in case of double multipliers (like 3d4l)
                 interpret_showcmd(numcmd.substr(0, numcmd.size()-1), numcmd[numcmd.size()-1], ch);
                 numcmd = "";
-                } catch(...) {}
                 return;
             }
             else if (!numcmd.empty()) {
