@@ -1328,9 +1328,11 @@ class Logic : public Model {
         else {
             if(containsletter(numcmd)) {
                 if(containscd(numcmd)) prevcommand = numcmd + static_cast<char>(ch);
-                if(movement_command(ch)) reformat_command(numcmd); // needed in case of double multipliers (like 3d4l)
+                try{
+                    if(movement_command(ch)) reformat_command(numcmd); // needed in case of double multipliers (like 3d4l)
                 interpret_showcmd(numcmd.substr(0, numcmd.size()-1), numcmd[numcmd.size()-1], ch);
                 numcmd = "";
+                } catch(...) {}
                 return;
             }
             else if (!numcmd.empty()) {
