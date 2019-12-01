@@ -45,7 +45,7 @@ class Logic : public Model {
     std::vector<std::string> entire_file_buffer;
     bool insert_did_something = false; // true if insert actually did something
     std::vector<size_t> double_undo_indices;
-
+    bool currently_macro;
 
     void addView(View *v) override {
         views.push_back(v);
@@ -622,6 +622,7 @@ class Logic : public Model {
             ++i;
         }
         undostack.push_back(save);
+        if(currently_macro) double_undo_indices.push_back(undostack.size());
     }
 
     void get_bracket_pairs(std::vector<std::pair<std::pair<int,int>,std::pair<int,int>>> &parentheses, std::vector<std::pair<std::pair<int,int>,std::pair<int,int>>> &brackets, std::vector<std::pair<std::pair<int,int>, std::pair<int,int>>> &braces) {
@@ -805,18 +806,12 @@ class Logic : public Model {
     void undocommand() {
         if (!undostack.empty()) {
             undo();
-            int temp_cursor_y = prevloc.back().first.second;
-            int temp_cursor_x = prevloc.back().first.first;
-            int temp_line = prevloc.back().second;
             returncursor();
             if(undostack.empty()) {
                 filechange = false;
             }
             if(!double_undo_indices.empty() && double_undo_indices.back() == undostack.size()) {
                 double_undo_indices.pop_back();
-                prevloc.back().first.second = temp_cursor_y;
-                prevloc.back().first.first = temp_cursor_x;
-                prevloc.back().second = temp_line;
                 undocommand();
             }
         }
@@ -1048,9 +1043,23 @@ class Logic : public Model {
                 if(num.empty()) repeats = 1;
                 if(ch == 'l') { // hardcode these in as they have weird behaviour at the end of lines
                     interpret_input('x');
+                    if(cmd == 'c') {
+                    savecursor();
+                    comparesaves();
+                    currently_macro = true;
+                    goinsert();
+                    currently_macro = false;
+                    }
                     return;
                 } else if(ch == 'h') {
                     interpret_input('X');
+                    if(cmd == 'c') {
+                    savecursor();
+                    comparesaves();
+                    currently_macro = true;
+                    goinsert();
+                    currently_macro = false;
+                    }
                     return;
                 }
                 cursor_x = std::min(cursor_x, std::max(0, static_cast<int>(lines[cursor_y + offset].size() - 1)));
@@ -1527,6 +1536,37 @@ class Logic : public Model {
                 prevpattern = tmp;
             }
         }
+        else if(ch == 'J') {
+            if(cursor_y + offset >= static_cast<int>(lines.size() - 1)) return;
+            comparable = lines;
+            savecursor();
+            if(lines[cursor_y + offset] == "") lines.erase(lines.begin() + cursor_y + offset);
+            else lines[cursor_y + offset] += " ";
+            int move_to = static_cast<int>(lines[cursor_y + offset].size() - 1);
+            cursor_x = 0;
+            while(cursor_x < static_cast<int>(lines[cursor_y+offset + 1].size()) && isspace(lines[cursor_y+offset + 1][cursor_x])) {
+                ++cursor_x;
+            }
+            lines[cursor_y + offset] += lines[cursor_y + offset + 1].substr(cursor_x, static_cast<int>(lines[cursor_y + offset + 1].size()) - cursor_x);
+            lines.erase(lines.begin() + cursor_y + offset + 1);
+            repeats -= 1;
+            cursor_x = move_to;
+            for(int i = 1; i < repeats; ++i) {
+                if(cursor_y + offset >= static_cast<int>(lines.size() - 1)) return;
+                if(lines[cursor_y + offset] == "") lines.erase(lines.begin() + cursor_y + offset);
+                else lines[cursor_y + offset] += " ";
+                int move_to = static_cast<int>(lines[cursor_y + offset].size() - 1);
+                cursor_x = 0;
+                while(cursor_x < static_cast<int>(lines[cursor_y+offset + 1].size()) && isspace(lines[cursor_y+offset + 1][cursor_x])) {
+                    ++cursor_x;
+                }
+                lines[cursor_y + offset] += lines[cursor_y + offset + 1].substr(cursor_x, static_cast<int>(lines[cursor_y + offset + 1].size()) - cursor_x);
+                lines.erase(lines.begin() + cursor_y + offset + 1);
+                cursor_x = move_to;
+            }
+            comparesaves();
+            repeats = 0;
+        }
         else if(ch == ';') {
             if(prevchar.first != 0) {
                 numcmd += prevchar.first;
@@ -1535,6 +1575,37 @@ class Logic : public Model {
                 numcmd = "";
                 return;
             }
+        }
+        else if(ch == 'o') {
+            comparable = lines;
+            savecursor();
+            comparesaves();
+            currently_macro = true;
+            std::string command = "A\n";
+            do_command_sequence(command);
+            currently_macro = false;
+            repeats = 0;
+        }
+        else if(ch == 'o') {
+            comparable = lines;
+            savecursor();
+            comparesaves();
+            currently_macro = true;
+            std::string command = "A\n";
+            do_command_sequence(command);
+            currently_macro = false;
+            repeats = 0;
+        }
+        else if(ch == 's') {
+            comparable = lines;
+            savecursor();
+            comparesaves();
+            currently_macro = true;
+            numcmd = "";
+            std::string command = "cl";
+            do_command_sequence(command);
+            currently_macro = false;
+            repeats = 0;
         }
         else if(ch == 6) { // ^f
             pagedown();
