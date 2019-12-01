@@ -48,7 +48,7 @@ class Logic : public Model {
     bool currently_macro = false;
     bool linewise_paste= true;
     std::map<char, std::string> macros;
-    std::string prevcommands = "";
+    std::string prevcommand = "";
 
     void addView(View *v) override {
         views.push_back(v);
@@ -328,7 +328,7 @@ class Logic : public Model {
             save_file();                    
         } 
         else if(cmd == ":q!") {
-            //debug(prevcommands);
+            debug(prevcommand);
             botinsert_mode = false;
             complete = true;
             cmdstr = "";
@@ -605,10 +605,7 @@ class Logic : public Model {
         if(comparable.size() == lines.size()) {
             while(comparable[i] == lines[i]) {
                 if(i == mxs - 1) {
-                    save.setStart(i+1);
-                    undostack.push_back(save);
-                    if(currently_macro) double_undo_indices.push_back(undostack.size());
-                    return;
+                    // return;
                 }
                 ++i;
             } 
@@ -1077,9 +1074,11 @@ class Logic : public Model {
                         do_command_sequence("x");
                         interpret_input('i');
                         currently_macro = false;
+                        if (cmd == 'd' || cmd == 'c') prevcommand = num + static_cast<char>(cmd) + static_cast<char>(ch);
                         return;
                     } else {
                         interpret_input('x');
+                        if (cmd == 'd' || cmd == 'c') prevcommand = num + static_cast<char>(cmd) + static_cast<char>(ch);
                         return;
                     }
                 } else if(ch == 'h') {
@@ -1089,9 +1088,11 @@ class Logic : public Model {
                         do_command_sequence("X");
                         interpret_input('i');
                         currently_macro = false;
+                        if (cmd == 'd' || cmd == 'c') prevcommand = num + static_cast<char>(cmd) + static_cast<char>(ch);
                         return;
                     } else {
                         interpret_input('X');
+                        if (cmd == 'd' || cmd == 'c') prevcommand = num + static_cast<char>(cmd) + static_cast<char>(ch);
                         return;
                     }
                 }
@@ -1106,12 +1107,14 @@ class Logic : public Model {
                 std::string movement_command = "";
                 movement_command += static_cast<char>(ch);
                 if(ch != cmd) interpret_input(ch);
+                if (cmd == 'd' || cmd == 'c') prevcommand = num + static_cast<char>(cmd) + static_cast<char>(ch);
                 if(ch == ':' || ch == '/') { // interpret the command if it is a colon command
                     displayViews();
                     int last_input = 0;
                     while(last_input != 10) {
                         last_input = getch();
                         interpret_input(last_input);
+                        if (cmd == 'd' || cmd == 'c') prevcommand += last_input;
                         displayViews();
                     }
                 }
@@ -1121,6 +1124,7 @@ class Logic : public Model {
                     int last_input = 0;
                     last_input = getch();
                     interpret_input(last_input);
+                    if (cmd == 'd' || cmd == 'c') prevcommand += last_input;
                     displayViews();
                 }
                 if(ch == 'j') {
@@ -1283,8 +1287,6 @@ class Logic : public Model {
             cntrl->genAction();
             ch = cntrl->getAction()->getchar();
         } 
-
-        prevcommands += ch;
 
         if (!cmdstr.empty() && (cmdstr[0] == 'E' || cmdstr[0] == 's')) {
             cmdstr = "";
@@ -1501,6 +1503,7 @@ class Logic : public Model {
             repeats = 0;
         }
         else if(ch == 'p') {
+            prevcommand = "p";
             savecursor();
             comparable = lines;
             paste();
@@ -1511,6 +1514,7 @@ class Logic : public Model {
             repeats = 0;
         }
         else if(ch == 'P') {
+            prevcommand = "P";
             if(linewise_paste) {
                 savecursor();
                 comparable = lines;
