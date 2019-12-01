@@ -47,6 +47,7 @@ class Logic : public Model {
     std::vector<size_t> double_undo_indices;
     bool currently_macro = false;
     bool linewise_paste= true;
+    std::map<char, std::string> macros;
 
     void addView(View *v) override {
         views.push_back(v);
@@ -953,8 +954,12 @@ class Logic : public Model {
         else if(ch == 'y') {
             return true;
         }
+        else if(ch == 'q') {
+            return true;
+        }
         return false;
     }
+
 
     void interpret_showcmd(std::string num, int cmd, int ch) {
         if (!num.empty()) {
@@ -1017,6 +1022,9 @@ class Logic : public Model {
                     }
                 }
                 repeats = 0;
+            }
+            else if (cmd == 'q') {
+                if(!valid_register(ch)) return;
             }
             else if (cmd == 'r') {
                 if(num.empty()) repeats = 1;
@@ -1085,7 +1093,7 @@ class Logic : public Model {
                     }
                 }
                 if(ch == 'f') {
-                    numcmd = "f";
+                    numcmd = cmd + "f";
                     displayViews();
                     int last_input = 0;
                     last_input = getch();
