@@ -3,10 +3,11 @@
 #include <ncurses.h>
 
 class Undo {
-    public:
+    
     int start;
     std::vector<std::string> prevaction;
-    
+
+  public:
     int getStart() {
         return start;
     }
