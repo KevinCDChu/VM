@@ -4,14 +4,15 @@
 #include "action.h"
 
 class Controller {
-    public:
+  protected:
     std::unique_ptr<Action> action;
+  public:
     virtual std::unique_ptr<Action> getAction() = 0;
     virtual void genAction() = 0;
 };
 
 class Keyboard: public Controller {
-    public:
+  public:
     std::unique_ptr<Action> getAction() override {
         return std::move(action);
     }

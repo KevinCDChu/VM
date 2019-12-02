@@ -10,12 +10,13 @@
 
 
 class View {
-  public:
+  protected:
     int height;
     int width;
+    virtual int tabOffset(int x, int y, std::vector<std::string> &lines, int offset) = 0;
+  public:
     virtual int getHeight() = 0;
     virtual int getWidth() = 0;
-    virtual int tabOffset(int x, int y, std::vector<std::string> &lines, int offset) = 0;
     virtual void updateView() = 0;
     virtual void displayView(std::vector<std::string> &lines, const int &cursor_y, const int &cursor_x, const int &offset, const std::string &cmdstr, const std::string &cmd) = 0;
     virtual ~View() {}
@@ -24,53 +25,8 @@ class View {
 
 
 class Window : public View {
-    public:
     
     std::vector<int> offsetv;
-
-
-    Window() { updateView(); }
-
-    int getHeight() { return height; }
-
-    int getWidth() { return width; }
-
-    void updateView() override {
-        getmaxyx(stdscr, height, width);
-        height -= 2;
-    }
-
-    void displayView(std::vector<std::string> &lines, const int &cursor_y,const  int &cursor_x, const int &offset, const std::string &cmdstr, const std::string &cmd) override {
-        move(0, 0);
-        int offs = 0;
-        std::vector<int> tmp (height + 3, 0);
-        offsetv = std::move(tmp);
-        int start_of_window = offset; // for multiline comments
-        get_first_comment(start_of_window, lines);
-        get_first_end_comment(start_of_window, lines);
-        int parentheses = 0;
-        int braces = 0;
-        int brackets = 0;
-        count_parentheses(lines, start_of_window, brackets, braces, parentheses);
-        for(int i = 0; i <= height - offs; ++i) {
-            int cur_line = i + offset;
-            if(i + offset < static_cast<int>(lines.size())) { 
-                myprintw(lines[i + offset], cur_line, lines, brackets, braces, parentheses); // print out line
-                int off = std::max(static_cast<int>(lines[i + offset].size() - 1), 0)/(width - 1);
-                offs += off;
-                offsetv[i + 1] = offs;
-            }
-            else {
-                attron(COLOR_PAIR(1));
-                printw("~");
-            }
-            printw("\n");
-        }
-        attroff(COLOR_PAIR(1));
-        if(cmdstr != "-- INSERT --" && cmdstr != "-- REPLACE --") move(adjusty(cursor_x, cursor_y, lines, offset), adjustx(cursor_x, cursor_y, lines, offset));
-        else move(adjusty(cursor_x, cursor_y, lines, offset), adjustxin(cursor_x, cursor_y, lines, offset));
-        refresh();
-    }
 
     int adjustx(int x, int y, std::vector<std::string> &lines, int offset) {
         int y_plus_offset = std::min(y + offset, static_cast<int>(lines.size() - 1)); // needed as this might cause segfault
@@ -133,11 +89,75 @@ class Window : public View {
         }
         return taboff;
     }
+
+  public:
+
+    Window() { updateView(); }
+
+    int getHeight() { return height; }
+
+    int getWidth() { return width; }
+
+    void updateView() override {
+        getmaxyx(stdscr, height, width);
+        height -= 2;
+    }
+
+    void displayView(std::vector<std::string> &lines, const int &cursor_y, const int &cursor_x, const int &offset, const std::string &cmdstr, const std::string &cmd) override {
+        move(0, 0);
+        int offs = 0;
+        std::vector<int> tmp (height + 3, 0);
+        offsetv = std::move(tmp);
+        int start_of_window = offset; // for multiline comments
+        get_first_comment(start_of_window, lines);
+        get_first_end_comment(start_of_window, lines);
+        int parentheses = 0;
+        int braces = 0;
+        int brackets = 0;
+        count_parentheses(lines, start_of_window, brackets, braces, parentheses);
+        for(int i = 0; i <= height - offs; ++i) {
+            int cur_line = i + offset;
+            if(i + offset < static_cast<int>(lines.size())) { 
+                myprintw(lines[i + offset], cur_line, lines, brackets, braces, parentheses); // print out line
+                int off = std::max(static_cast<int>(lines[i + offset].size() - 1), 0)/(width - 1);
+                offs += off;
+                offsetv[i + 1] = offs;
+            }
+            else {
+                attron(COLOR_PAIR(1));
+                printw("~");
+            }
+            printw("\n");
+        }
+        attroff(COLOR_PAIR(1));
+        if(cmdstr != "-- INSERT --" && cmdstr != "-- REPLACE --") move(adjusty(cursor_x, cursor_y, lines, offset), adjustx(cursor_x, cursor_y, lines, offset));
+        else move(adjusty(cursor_x, cursor_y, lines, offset), adjustxin(cursor_x, cursor_y, lines, offset));
+        refresh();
+    }
 };
 
 
 class Bar : public View {
-    public:
+
+    int tabOffset(int x, int y, std::vector<std::string> &lines, int offset) override {
+        int taboff = 0;
+        int tabcol = 8;
+        for(int i = 0; i < std::min(static_cast<int>(lines[y+offset].size()), x+1); ++i) {
+            if(lines[y+offset][i] == '\t') {
+                taboff += tabcol-1;
+                tabcol = 9;
+            }
+            if(tabcol != 1) {
+                --tabcol;
+            }
+            else {
+                tabcol = 8;
+            }
+        }
+        return taboff;
+    }
+
+  public:
 
     Bar() { updateView(); }
 
@@ -208,24 +228,6 @@ class Bar : public View {
             move(cursor_y, std::min(cursor_x, std::max(width - 1, 0)));
         }
         refresh();
-    }
-
-    int tabOffset(int x, int y, std::vector<std::string> &lines, int offset) override {
-        int taboff = 0;
-        int tabcol = 8;
-        for(int i = 0; i < std::min(static_cast<int>(lines[y+offset].size()), x+1); ++i) {
-            if(lines[y+offset][i] == '\t') {
-                taboff += tabcol-1;
-                tabcol = 9;
-            }
-            if(tabcol != 1) {
-                --tabcol;
-            }
-            else {
-                tabcol = 8;
-            }
-        }
-        return taboff;
     }
 };
 

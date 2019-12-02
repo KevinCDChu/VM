@@ -8,19 +8,20 @@
 
 
 class Model {
-  public:
+  protected:
     std::vector<std::unique_ptr<View>> views;
     std::unique_ptr<Controller> cntrl;
+    virtual ~Model() {}
+  public:
     virtual void addView(std::unique_ptr<View> &&v) = 0;
     virtual void addController(std::unique_ptr<Controller> &&c) = 0;
     virtual void updateViews() = 0;
     virtual void displayViews() = 0;
-    virtual ~Model() {}
+    virtual void interpret_input(int ch = 0) = 0;
 };
 
 
 class Logic : public Model {
-    public:
     bool complete = false;
     bool insert_mode = false; // True if insert mode, false if command mode
     bool botinsert_mode = false;
@@ -53,13 +54,7 @@ class Logic : public Model {
     std::string prevcommand = "";
     std::vector<int> rlines; // lines added by replace mode
 
-    void addView(std::unique_ptr<View> &&v) override {
-        views.push_back(std::move(v));
-    }
-
-    void addController(std::unique_ptr<Controller> &&c) override {
-        cntrl = std::move(c);
-    }
+    
 
     void save_file() {
         std::ofstream myfile;
@@ -345,7 +340,6 @@ class Logic : public Model {
             save_file();                    
         } 
         else if(cmd == ":q!") {
-            debug(prevcommand);
             botinsert_mode = false;
             complete = true;
             cmdstr = "";
@@ -571,21 +565,6 @@ class Logic : public Model {
         }
     }
 
-    void updateViews() {
-        for(auto &i : views) i->updateView();
-    }
-    void displayViews() {
-        updateViews();
-        if (botinsert_mode) {
-            for(auto &i : views) i->displayView(lines, cursor_y, cursor_x, offset, cmdstr, numcmd);
-        }
-        else {
-            for(int i = views.size() - 1; i >= 0; --i) {
-                views[i]->displayView(lines, cursor_y, cursor_x, offset, cmdstr, numcmd);
-            }
-        }
-    }
-
     void goinsert() {
         insert_mode = true;
         cmdstr = "-- INSERT --";
@@ -807,13 +786,6 @@ class Logic : public Model {
         }
         lines = tmp;
         undostack.pop_back();
-    }
-
-    void debug(std::string x) {
-        std::ofstream myfile;
-        myfile.open("out.txt");
-        myfile << x << std::endl;
-        myfile.close();
     }
 
     void repeatsave() {
@@ -1303,7 +1275,39 @@ class Logic : public Model {
         }
     }
 
-    void interpret_input(int ch = 0) { // make it possible to do command not from keyboard
+  public:
+
+    void setLines(std::vector<std::string> v) {
+        lines = v;
+    }
+    void setFilename(std::string s) {
+        filename = s;
+    }
+    bool completed() {
+        return complete;
+    }
+    void addView(std::unique_ptr<View> &&v) override {
+        views.push_back(std::move(v));
+    }
+
+    void addController(std::unique_ptr<Controller> &&c) override {
+        cntrl = std::move(c);
+    }
+    void updateViews() override {
+        for(auto &i : views) i->updateView();
+    }
+    void displayViews() override {
+        updateViews();
+        if (botinsert_mode) {
+            for(auto &i : views) i->displayView(lines, cursor_y, cursor_x, offset, cmdstr, numcmd);
+        }
+        else {
+            for(int i = views.size() - 1; i >= 0; --i) {
+                views[i]->displayView(lines, cursor_y, cursor_x, offset, cmdstr, numcmd);
+            }
+        }
+    }
+    void interpret_input(int ch = 0) override { // make it possible to do command not from keyboard
         if(ch == 0) {
             cntrl->genAction();
             std::unique_ptr<Action> new_action = cntrl->getAction();

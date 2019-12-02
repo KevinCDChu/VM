@@ -3,14 +3,14 @@
 #include <ncurses.h>
 
 class Action {
-    public:
     int ch;
-
+  public:
     Action(int ch): ch{ch} {} 
 
     int getchar() {
         return ch;
     }
+
 };
 
 #endif
