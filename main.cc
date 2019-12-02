@@ -19,6 +19,7 @@ int main(int argc, char * argv[]) {
     keypad(stdscr, true);
     cbreak();
     noecho();
+    mousemask(BUTTON1_CLICKED, NULL);
     ESCDELAY = 0;
     std::vector<std::string> lines;
     if(file_exists(argv[1])) {
