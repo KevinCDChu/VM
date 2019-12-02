@@ -623,7 +623,7 @@ class Logic : public Model {
         if(comparable.size() == lines.size()) {
             while(comparable[i] == lines[i]) {
                 if(i == mxs - 1) {
-                    save.setStart(i);
+                    save.setStart(i+1);
                     undostack.push_back(save);
                     return;
                 }
