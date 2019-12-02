@@ -1294,7 +1294,12 @@ class Logic : public Model {
 
     void do_command_sequence(std::string str) {
         for(int i = 0; i < static_cast<int>(str.size()); ++i) {
-            interpret_input(str[i]);
+            if(str[i] == 7) {
+                interpret_input(KEY_BACKSPACE);
+            }
+            else {
+                interpret_input(str[i]);
+            }
         }
     }
 
