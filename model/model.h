@@ -1644,7 +1644,7 @@ class Logic : public Model {
         else if(ch == KEY_MOUSE) {
             MEVENT event;
             if(getmouse(&event) == OK) {
-                cursor_y = std::min(event.y, static_cast<int>(lines.size()));
+                cursor_y = std::min(event.y, std::min(views[0]->getHeight(), static_cast<int>(lines.size())));
                 cursor_x = std::min(event.x, static_cast<int>(lines[cursor_y + offset].size() - 1));
             }
         }
