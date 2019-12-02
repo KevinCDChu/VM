@@ -1304,6 +1304,14 @@ class Logic : public Model {
             std::unique_ptr<Action> new_action = cntrl->getAction();
             ch = new_action->getchar();
         } 
+        if(ch == KEY_MOUSE) {
+            MEVENT event;
+            if(getmouse(&event) == OK) {
+                cursor_y = std::min(event.y, std::min(views[0]->getHeight(), static_cast<int>(lines.size())));
+                cursor_x = std::min(event.x, static_cast<int>(lines[cursor_y + offset].size() - 1));
+            }
+		return;
+        }
 
         if (!cmdstr.empty() && (cmdstr[0] == 'E' || cmdstr[0] == 's')) {
             cmdstr = "";
@@ -1641,13 +1649,6 @@ class Logic : public Model {
                 clearbottom(views[0]->getHeight());
                 returncursor();
                 prevpattern = tmp;
-            }
-        }
-        else if(ch == KEY_MOUSE) {
-            MEVENT event;
-            if(getmouse(&event) == OK) {
-                cursor_y = std::min(event.y, std::min(views[0]->getHeight(), static_cast<int>(lines.size())));
-                cursor_x = std::min(event.x, static_cast<int>(lines[cursor_y + offset].size() - 1));
             }
         }
         else if(ch == 'N') {
