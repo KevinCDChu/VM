@@ -908,8 +908,8 @@ class Logic : public Model {
 
     bool cmdF(int curline, int end, int ch) {
         if (cursor_x != 0) {
-            if (lines[curline].find(ch, cursor_x + 1) != std::string::npos) {
-                cursor_x = lines[curline].find(ch, cursor_x + 1);
+            if (lines[curline].rfind(ch, std::max(cursor_x - 1, 0)) != std::string::npos) {
+                cursor_x = lines[curline].rfind(ch, std::max(cursor_x - 1, 0));
                 return true;
             }
             return false;
