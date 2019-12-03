@@ -33,7 +33,7 @@ bool valid_register(int ch) {
 
 bool valid_movement(int ch) {
     return (ch == 'h' || ch == 'j' || ch == 'k' || ch == 'l' || ch == ':' || ch == '/' || ch == '0' || ch == '$' || ch == '%' || ch == ';' || ch == 'f'
-    || ch == 'w' || ch == 'b' || ch == 'n' || ch == 'N' || ch == 'c' || ch == 'd' || ch == 'y');
+    || ch == 'w' || ch == 'b' || ch == 'n' || ch == 'N' || ch == 'c' || ch == 'd' || ch == 'y' || ch == '?');
 }
 
 bool is_linewise(int ch) {

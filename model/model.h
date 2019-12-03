@@ -1094,7 +1094,7 @@ class Logic : public Model {
                 movement_command += static_cast<char>(ch);
                 if(ch != cmd) interpret_input(ch);
                 if (cmd == 'd' || cmd == 'c') prevcommand = num + static_cast<char>(cmd) + static_cast<char>(ch);
-                if(ch == ':' || ch == '/') { // interpret the command if it is a colon command
+                if(ch == ':' || ch == '/' || ch == '?') { // interpret the command if it is a colon command
                     displayViews();
                     int last_input = 0;
                     while(last_input != 10) {
