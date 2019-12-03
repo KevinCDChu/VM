@@ -825,7 +825,7 @@ class Logic : public Model {
     void pagedown() {
         offset += views[0]->getHeight() - 1;
         offset = std::min(offset, std::max(0, static_cast<int>(lines.size()) - 6));
-        cursor_y = 5;
+        cursor_y = std::min(static_cast<int>(lines.size())-1, 5);
         cursor_x = 0;
         while(cursor_x < static_cast<int>(lines[cursor_y+offset].size()) && isspace(lines[cursor_y+offset][cursor_x])) {
             ++cursor_x;
@@ -862,7 +862,7 @@ class Logic : public Model {
         if(offset > maxoff) {
             cursor_y += offset - maxoff;
             offset = std::min(offset, maxoff);
-            cursor_y = std::min(cursor_y, views[0]->getHeight());
+            cursor_y = std::min(static_cast<int>(lines.size()) - 1, std::min(cursor_y, views[0]->getHeight()));
         }
         if(offset < maxoff) {
             cursor_y = std::max(5, cursor_y);
@@ -1062,6 +1062,7 @@ class Logic : public Model {
                     } else {
                         filechange = true;
                         interpret_input('x');
+                        interpret_input('u');
                         if (cmd == 'd' || cmd == 'c') prevcommand = num + static_cast<char>(cmd) + static_cast<char>(ch);
                         return;
                     }
@@ -1078,6 +1079,7 @@ class Logic : public Model {
                     } else {
                         filechange = true;
                         interpret_input('X');
+                        interpret_input('u');
                         if (cmd == 'd' || cmd == 'c') prevcommand = num + static_cast<char>(cmd) + static_cast<char>(ch);
                         return;
                     }
