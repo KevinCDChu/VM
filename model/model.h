@@ -1166,7 +1166,7 @@ class Logic : public Model {
                     interpret_input('i');
                     currently_macro = false;
                 }
-                if(cmd == 'y') interpret_input('u'); // undo all the changes
+                if(cmd == 'y') undocommand(); // undo all the changes
                 if(cmd == ch || ch == 'j' || ch == 'k') {
                     linewise_paste = true;
                 } else {
@@ -1320,8 +1320,8 @@ class Logic : public Model {
         if(ch == KEY_MOUSE) {
             MEVENT event;
             if(getmouse(&event) == OK) {
-                cursor_y = std::min(event.y, std::min(views[0]->getHeight(), static_cast<int>(lines.size())));
-                cursor_x = std::min(event.x, static_cast<int>(lines[cursor_y + offset].size() - 1));
+                cursor_y = std::max(std::min(event.y, std::min(views[0]->getHeight(), static_cast<int>(lines.size() - 1))), 0);
+                cursor_x = std::max(std::min(event.x, static_cast<int>(lines[cursor_y + offset].size() - 1)), 0);
             }
 		return;
         }
@@ -1340,6 +1340,7 @@ class Logic : public Model {
             if(containsletter(numcmd)) {
                 if(containscd(numcmd)) prevcommand = numcmd + static_cast<char>(ch);
                 if(valid_movement(ch) && containscdy(numcmd)) reformat_command(numcmd); // needed in case of double multipliers (like 3d4l)
+                if(containscdy(numcmd) && !valid_movement(ch)) {numcmd = ""; return;}
                 interpret_showcmd(numcmd.substr(0, numcmd.size()-1), numcmd[numcmd.size()-1], ch);
                 numcmd = "";
                 return;
