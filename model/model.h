@@ -366,9 +366,11 @@ class Logic : public Model {
                 std::vector<std::string> temp_buffer = buffer;
                 buffer = entire_file_buffer;
                 comparable = lines;
-                cursor_y = prevloc.back().first.second;
-                cursor_x = prevloc.back().first.first;
-                offset = prevloc.back().second - cursor_y;
+                if(!prevloc.empty()) {
+                    cursor_y = prevloc.back().first.second;
+                    cursor_x = prevloc.back().first.first;
+                    offset = prevloc.back().second - cursor_y;
+                }
                 savecursor();
                 for(int i = 0; i < static_cast<int>(entire_file_buffer.size()); ++i) {
                     lines.insert(lines.begin() + cursor_y + offset + i + 1, entire_file_buffer[i]);
@@ -1464,6 +1466,7 @@ class Logic : public Model {
             repeats = 0;
         }
         else if(ch == 'a') {
+            cursor_x = std::min(cursor_x, std::max(static_cast<int>(lines[cursor_y + offset].size()) - 1, 0));
             if(repeats == 0) prevcommand = "a";
             else prevcommand = std::to_string(repeats) + "a";
             if(cursor_x < static_cast<int>(lines[cursor_y + offset].size())) ++cursor_x;
@@ -1785,7 +1788,8 @@ class Logic : public Model {
         }
         else if(ch == 's') {
             currently_macro = true;
-            do_command_sequence(std::to_string(repeats) + "cl");
+            if(repeats != 0) do_command_sequence(std::to_string(repeats) + "cl");
+            else do_command_sequence("cl");
             currently_macro = false;
             filechange = true;
         }
