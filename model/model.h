@@ -959,7 +959,11 @@ class Logic : public Model {
 
     void interpret_showcmd(std::string num, int cmd, int ch) {
         if (!num.empty()) {
-            repeats = stoi(num);
+            try { 
+                repeats = stoi(num);
+            } catch(...) {
+                repeats = 0;
+            }
         }
         if (cmd != 0) {
             int curline = cursor_y + offset;
@@ -1062,7 +1066,7 @@ class Logic : public Model {
                     } else {
                         filechange = true;
                         interpret_input('x');
-                        interpret_input('u');
+                        if(cmd == 'y') interpret_input('u');
                         if (cmd == 'd' || cmd == 'c') prevcommand = num + static_cast<char>(cmd) + static_cast<char>(ch);
                         return;
                     }
@@ -1079,7 +1083,7 @@ class Logic : public Model {
                     } else {
                         filechange = true;
                         interpret_input('X');
-                        interpret_input('u');
+                        if(cmd == 'y') interpret_input('u');
                         if (cmd == 'd' || cmd == 'c') prevcommand = num + static_cast<char>(cmd) + static_cast<char>(ch);
                         return;
                     }
